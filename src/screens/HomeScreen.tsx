@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View, ImageBackground, TouchableOpacity, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BlurryButton from '../components/BlurryButton';
+import InfoCard from '../components/InfoCard';
 
 interface HomeScreenProps {
   navigation: any;
@@ -24,8 +25,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             <Ionicons name="person-circle-outline" size={24} color="white" />
           </TouchableOpacity>
         </View>
-        <View style={styles.titleContainer}>
-          <Text style={styles.title}>STARLINK</Text>
+        <View style={styles.content}>
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>STARLINK</Text>
+          </View>
+          <InfoCard />
         </View>
         <View style={styles.buttonContainer}>
           <BlurryButton
@@ -50,21 +54,26 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.3)', // Dark overlay for better text readability
     paddingHorizontal: 20,
-    paddingTop: 60, // Reduced from 100
+    paddingTop: 60,
     paddingBottom: 40,
   },
   headerIcons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10, // Reduced from 20
+    marginBottom: 10,
   },
   iconButton: {
     padding: 8,
   },
+  content: {
+    flex: 1,
+    justifyContent: 'flex-start', // Changed from 'center' to 'flex-start'
+    paddingTop: 40, // Added padding to move content up
+  },
   titleContainer: {
-    paddingTop: 20, // Reduced from 40
-    marginBottom: 'auto', // Pushes button area down
+    paddingTop: 0, // Removed padding to move title up
+    marginBottom: 20, // Space between title and card
   },
   title: {
     fontSize: 36,
