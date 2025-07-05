@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
+import Compass from '../components/Compass';
 
 interface CameraScreenProps {
   navigation: any;
@@ -42,6 +43,9 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
             <Ionicons name="chevron-back" size={24} color="white" />
           </TouchableOpacity>
         </View>
+        <View style={styles.compassContainer}>
+          <Compass />
+        </View>
       </CameraView>
     </View>
   );
@@ -71,6 +75,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     borderRadius: 20,
     padding: 8,
+  },
+  compassContainer: {
+    position: 'absolute',
+    bottom: 40,
+    right: 20,
+    zIndex: 1,
   },
   permissionText: {
     textAlign: 'center',
