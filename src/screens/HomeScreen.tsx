@@ -1,5 +1,7 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, ImageBackground, TouchableOpacity, StatusBar } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import BlurryButton from '../components/BlurryButton';
 
 interface HomeScreenProps {
   navigation: any;
@@ -7,47 +9,74 @@ interface HomeScreenProps {
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Welcome to Sky Scanner!</Text>
+    <ImageBackground
+      source={require('../../assets/starlink_home.jpg')}
+      style={styles.backgroundImage}
+      resizeMode="cover"
+    >
+      <StatusBar barStyle="light-content" />
+      <View style={styles.overlay}>
+        <View style={styles.headerIcons}>
+          <TouchableOpacity style={styles.iconButton}>
+            <Ionicons name="help-circle-outline" size={24} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconButton}>
+            <Ionicons name="person-circle-outline" size={24} color="white" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>STARLINK</Text>
+        </View>
+        <View style={styles.buttonContainer}>
+          <BlurryButton
+            title="Check for Obstructions"
+            onPress={() => navigation.navigate('CameraScreen')}
+            style={styles.button}
+            icon="camera-outline"
+          />
+        </View>
       </View>
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate('CameraScreen')}
-      >
-        <Text style={styles.buttonText}>Check for Obstructions</Text>
-      </TouchableOpacity>
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  backgroundImage: {
     flex: 1,
-    backgroundColor: '#fff',
-    justifyContent: 'space-between',
+    width: '100%',
+    height: '100%',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Dark overlay for better text readability
     paddingHorizontal: 20,
+    paddingTop: 60, // Reduced from 100
     paddingBottom: 40,
   },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
+  headerIcons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 10, // Reduced from 20
+  },
+  iconButton: {
+    padding: 8,
+  },
+  titleContainer: {
+    paddingTop: 20, // Reduced from 40
+    marginBottom: 'auto', // Pushes button area down
   },
   title: {
-    fontSize: 24,
+    fontSize: 36,
     fontWeight: 'bold',
     textAlign: 'center',
+    color: 'white',
+    letterSpacing: 8,
+  },
+  buttonContainer: {
+    paddingBottom: 15, // Raises button higher from bottom
   },
   button: {
-    backgroundColor: '#6B7280',
-    paddingVertical: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
+    marginHorizontal: 0,
   },
 });
