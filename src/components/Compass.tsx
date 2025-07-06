@@ -1,3 +1,4 @@
+// src/components/Compass.tsx
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { Magnetometer, Accelerometer } from 'expo-sensors';
@@ -5,9 +6,10 @@ import { Ionicons } from '@expo/vector-icons';
 
 interface CompassProps {
   style?: any;
+  onHeadingChange?: (heading: number) => void; // Add this line
 }
 
-export default function Compass({ style }: CompassProps) {
+export default function Compass({ style, onHeadingChange }: CompassProps) {
   const [magnetometerData, setMagnetometerData] = useState({ x: 0, y: 0, z: 0 });
   const [accelerometerData, setAccelerometerData] = useState({ x: 0, y: 0, z: 0 });
   const [heading, setHeading] = useState(0);
@@ -48,9 +50,16 @@ export default function Compass({ style }: CompassProps) {
     const angle = Math.atan2(-magX, -magY) * (180 / Math.PI);
     const compensatedHeading = (angle + 360) % 360;
     
-    setHeading(Math.round(compensatedHeading));
-  }, [magnetometerData, accelerometerData]);
+    const roundedHeading = Math.round(compensatedHeading);
+    setHeading(roundedHeading);
+    
+    // Add this line to export the heading
+    if (onHeadingChange) {
+      onHeadingChange(roundedHeading);
+    }
+  }, [magnetometerData, accelerometerData, onHeadingChange]); // Add onHeadingChange to dependency array
 
+  // Rest of your code stays exactly the same...
   const getDirectionText = (heading: number) => {
     if (heading >= 337.5 || heading < 22.5) return 'N';
     if (heading >= 22.5 && heading < 67.5) return 'NE';
@@ -65,10 +74,10 @@ export default function Compass({ style }: CompassProps) {
 
   const renderTicks = () => {
     const ticks = [];
-    for (let i = 0; i < 20; i++) { // Reduced from 24 to 20 ticks (every 18 degrees)
-      const angle = (i * 18); // 18 degrees between each tick
-      const isCardinal = i % 5 === 0; // Every 5th tick is a cardinal direction (N, E, S, W)
-      const isNorth = i === 0; // First tick is north
+    for (let i = 0; i < 20; i++) {
+      const angle = (i * 18);
+      const isCardinal = i % 5 === 0;
+      const isNorth = i === 0;
       
       ticks.push(
         <View
@@ -78,7 +87,7 @@ export default function Compass({ style }: CompassProps) {
             {
               transform: [
                 { rotate: `${angle}deg` },
-                { translateY: -22 }, // Reduced from -28 due to smaller circle
+                { translateY: -22 },
               ],
             },
           ]}
@@ -96,35 +105,33 @@ export default function Compass({ style }: CompassProps) {
 
   return (
     <View style={[styles.compass, style]}>
-      {/* User direction arrow above compass */}
       <View style={styles.userArrow}>
         <Ionicons name="triangle" size={12} color="white" />
       </View>
       
       <View style={styles.compassCircle}>
-        {/* Rotating tick marks */}
         <View style={[styles.tickContainer, { transform: [{ rotate: `${-heading}deg` }] }]}>
           {renderTicks()}
         </View>
         
-        {/* Direction text in center */}
         <Text style={styles.directionText}>{getDirectionText(heading)}</Text>
       </View>
     </View>
   );
 }
 
+// Your styles stay exactly the same
 const styles = StyleSheet.create({
   compass: {
     alignItems: 'center',
   },
   userArrow: {
-    marginBottom: 5, // Increased from 2 to 5 for more spacing
+    marginBottom: 5,
   },
   compassCircle: {
-    width: 65, // Reduced from 80 to 65
-    height: 65, // Reduced from 80 to 65
-    borderRadius: 32.5, // Adjusted border radius
+    width: 65,
+    height: 65,
+    borderRadius: 32.5,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.4)',

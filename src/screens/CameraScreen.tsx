@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+// src/screens/CameraScreen.tsx
+import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Dimensions } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
-import { Accelerometer } from 'expo-sensors';
+import { Accelerometer, Magnetometer, Gyroscope } from 'expo-sensors';
 import Compass from '../components/Compass';
 import AccelerometerDebug from '../components/AccelerometerDebug';
+import OrientationDebug from '../components/OrientationDebug';
+import SkyDome3D from '../components/SkyDome3D';
 
 interface CameraScreenProps {
   navigation: any;
@@ -13,32 +16,56 @@ interface CameraScreenProps {
 export default function CameraScreen({ navigation }: CameraScreenProps) {
   const [permission, requestPermission] = useCameraPermissions();
   const [accelerometerData, setAccelerometerData] = useState({ x: 0, y: 0, z: 0 });
+  const [magnetometerData, setMagnetometerData] = useState({ x: 0, y: 0, z: 0 });
+  const [gyroscopeData, setGyroscopeData] = useState({ x: 0, y: 0, z: 0 });
+  const [compassHeading, setCompassHeading] = useState(0);
   const [isPointingUp, setIsPointingUp] = useState(false);
 
+  // Memoize the pointing up calculation to prevent infinite loops
+  const calculatePointingUp = useCallback((data: { x: number; y: number; z: number }) => {
+    const pitch = Math.atan2(-data.y, Math.sqrt(data.x * data.x + data.z * data.z));
+    const roll = Math.atan2(data.x, data.z);
+    
+    const pitchDegrees = pitch * (180 / Math.PI);
+    const rollDegrees = roll * (180 / Math.PI);
+    
+    const isPitchNearZero = Math.abs(pitchDegrees) < 30;
+    const isRollNearZero = Math.abs(rollDegrees) < 45;
+    
+    return isPitchNearZero && isRollNearZero;
+  }, []);
+
+  const handleHeadingChange = useCallback((heading: number) => {
+    setCompassHeading(heading);
+  }, []);
+
   useEffect(() => {
-    const subscription = Accelerometer.addListener((data) => {
+    const accelerometerSubscription = Accelerometer.addListener((data) => {
       setAccelerometerData(data);
       
-      // Calculate if device is pointing up at sky
-      // Based on observations: when pointing up, pitch ~0, roll ~0
-      const pitch = Math.atan2(-data.y, Math.sqrt(data.x * data.x + data.z * data.z));
-      const roll = Math.atan2(data.x, data.z);
-      
-      const pitchDegrees = pitch * (180 / Math.PI);
-      const rollDegrees = roll * (180 / Math.PI);
-      
-      // Check if both pitch and roll are close to 0 (pointing up at sky)
-      const isPitchNearZero = Math.abs(pitchDegrees) < 30;
-      const isRollNearZero = Math.abs(rollDegrees) < 45;
-      
-      const pointingUp = isPitchNearZero && isRollNearZero;
+      // Calculate pointing up status
+      const pointingUp = calculatePointingUp(data);
       setIsPointingUp(pointingUp);
     });
 
-    Accelerometer.setUpdateInterval(100);
+    const magnetometerSubscription = Magnetometer.addListener((data) => {
+      setMagnetometerData(data);
+    });
 
-    return () => subscription && subscription.remove();
-  }, []);
+    const gyroscopeSubscription = Gyroscope.addListener((data) => {
+      setGyroscopeData(data);
+    });
+
+    Accelerometer.setUpdateInterval(16); // 60 FPS for smooth movement
+    Magnetometer.setUpdateInterval(100);
+    Gyroscope.setUpdateInterval(16); // 60 FPS for smooth movement
+
+    return () => {
+      accelerometerSubscription && accelerometerSubscription.remove();
+      magnetometerSubscription && magnetometerSubscription.remove();
+      gyroscopeSubscription && gyroscopeSubscription.remove();
+    };
+  }, [calculatePointingUp]);
 
   if (!permission) {
     return (
@@ -64,6 +91,15 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
   return (
     <View style={styles.cameraContainer}>
       <CameraView style={styles.camera} facing="back">
+        {/* 3D Sky Dome Overlay */}
+        <SkyDome3D 
+          accelerometerData={accelerometerData} 
+          magnetometerData={magnetometerData}
+          gyroscopeData={gyroscopeData}
+          compassHeading={compassHeading}
+          isPointingUp={isPointingUp} 
+        />
+        
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
@@ -76,8 +112,16 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
         {/* Accelerometer Debug */}
         <AccelerometerDebug data={accelerometerData} isPointingUp={isPointingUp} />
         
+        {/* Orientation Debug */}
+        <OrientationDebug 
+          accelerometerData={accelerometerData} 
+          magnetometerData={magnetometerData}
+          gyroscopeData={gyroscopeData}
+          compassHeading={compassHeading}
+        />
+        
         <View style={styles.compassContainer}>
-          <Compass />
+          <Compass onHeadingChange={handleHeadingChange} />
         </View>
       </CameraView>
     </View>
@@ -102,7 +146,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 60,
     left: 20,
-    zIndex: 1,
+    zIndex: 2,
   },
   backButton: {
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -113,7 +157,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 40,
     right: 20,
-    zIndex: 1,
+    zIndex: 2,
   },
   permissionText: {
     textAlign: 'center',
