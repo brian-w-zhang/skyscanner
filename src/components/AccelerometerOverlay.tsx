@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
 
-interface AccelerometerOverlayProps {}
+interface AccelerometerOverlayProps {
+  onScanStart?: () => void;
+}
 
 interface ThresholdState {
   color: string;
@@ -10,7 +12,7 @@ interface ThresholdState {
   message: string;
 }
 
-export default function AccelerometerOverlay({}: AccelerometerOverlayProps) {
+export default function AccelerometerOverlay({ onScanStart }: AccelerometerOverlayProps) {
   const [accelerometerData, setAccelerometerData] = useState({ x: 0, y: 0, z: 0 });
   const [thresholdState, setThresholdState] = useState<ThresholdState>({
     color: '#ff0000',
@@ -69,6 +71,9 @@ export default function AccelerometerOverlay({}: AccelerometerOverlayProps) {
     });
   }, [accelerometerData]);
 
+  // Check if user is pointing at sky (green state)
+  const isPointingAtSky = thresholdState.color === '#00ff00';
+
   return (
     <>
       {/* Colored overlay */}
@@ -104,6 +109,19 @@ export default function AccelerometerOverlay({}: AccelerometerOverlayProps) {
           </View>
         </View>
       </View>
+
+      {/* Scan button - only shows when pointing at sky */}
+      {isPointingAtSky && onScanStart && (
+        <View style={styles.scanButtonContainer} pointerEvents="box-none">
+          <TouchableOpacity
+            style={styles.scanButton}
+            onPress={onScanStart}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.scanButtonText}>Start Sky Scan</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </>
   );
 }
@@ -160,5 +178,35 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontFamily: 'monospace',
+  },
+  scanButtonContainer: {
+    position: 'absolute',
+    bottom: 100,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 3,
+  },
+  scanButton: {
+    backgroundColor: 'rgba(0, 255, 0, 0.8)',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  scanButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });

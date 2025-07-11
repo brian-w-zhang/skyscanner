@@ -4,7 +4,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import Compass from '../components/Compass';
 import OrientationDebugNew from '../components/OrientationDebugNew';
-// import SkyDome3D from '../components/SkyDome3D'; // Commented out for now
+import SkyDome3D from '../components/SkyDome3D';
 import AccelerometerOverlay from '../components/AccelerometerOverlay';
 import { OrientationTracker, Orientation } from '../utils/orientationTracker';
 
@@ -17,6 +17,7 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
   const [orientation, setOrientation] = useState<Orientation>({ pitch: 0, yaw: 0, roll: 0 });
   const [compassHeading, setCompassHeading] = useState(0);
   const [isPointingUp, setIsPointingUp] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
   
   const orientationTracker = useRef<OrientationTracker | null>(null);
 
@@ -38,6 +39,14 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
 
   const handleHeadingChange = useCallback((heading: number) => {
     setCompassHeading(heading);
+  }, []);
+
+  const handleScanStart = useCallback(() => {
+    setIsScanning(true);
+  }, []);
+
+  const handleScanStop = useCallback(() => {
+    setIsScanning(false);
   }, []);
 
   useEffect(() => {
@@ -74,14 +83,12 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
   return (
     <View style={styles.cameraContainer}>
       <CameraView style={styles.camera} facing="back">
-        {/* Accelerometer-based overlay - NEW */}
-        <AccelerometerOverlay />
-        
-        {/* 3D Sky Dome Overlay - COMMENTED OUT */}
-        {/* <SkyDome3D 
-          orientation={orientation}
-          isPointingUp={isPointingUp} 
-        /> */}
+        {/* Show either AccelerometerOverlay or SkyDome3D based on scanning state */}
+        {!isScanning ? (
+          <AccelerometerOverlay onScanStart={handleScanStart} />
+        ) : (
+          <SkyDome3D orientation={orientation} />
+        )}
         
         <View style={styles.header}>
           <TouchableOpacity
@@ -102,13 +109,26 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
           <Compass onHeadingChange={handleHeadingChange} />
         </View>
 
-        {/* Optional: Reset button for testing */}
+        {/* Reset button - also stops scanning when pressed */}
         <TouchableOpacity 
           style={styles.resetButton} 
-          onPress={() => orientationTracker.current?.reset()}
+          onPress={() => {
+            orientationTracker.current?.reset();
+            handleScanStop();
+          }}
         >
           <Text style={styles.resetButtonText}>Reset</Text>
         </TouchableOpacity>
+
+        {/* Stop scanning button - only shows when scanning */}
+        {isScanning && (
+          <TouchableOpacity
+            style={styles.stopScanButton}
+            onPress={handleScanStop}
+          >
+            <Text style={styles.stopScanButtonText}>Stop Scan</Text>
+          </TouchableOpacity>
+        )}
       </CameraView>
     </View>
   );
@@ -159,6 +179,24 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  stopScanButton: {
+    position: 'absolute',
+    bottom: 100,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 3,
+  },
+  stopScanButtonText: {
+    backgroundColor: 'rgba(255, 0, 0, 0.8)',
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 20,
+    textAlign: 'center',
   },
   permissionText: {
     textAlign: 'center',
