@@ -1,13 +1,11 @@
-// src/screens/CameraScreen.tsx
-import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
-import { Accelerometer, Magnetometer, Gyroscope } from 'expo-sensors';
 import Compass from '../components/Compass';
-import AccelerometerDebug from '../components/AccelerometerDebug';
-import OrientationDebug from '../components/OrientationDebug';
+import OrientationDebugNew from '../components/OrientationDebugNew';
 import SkyDome3D from '../components/SkyDome3D';
+import { OrientationTracker, Orientation } from '../utils/orientationTracker';
 
 interface CameraScreenProps {
   navigation: any;
@@ -15,57 +13,41 @@ interface CameraScreenProps {
 
 export default function CameraScreen({ navigation }: CameraScreenProps) {
   const [permission, requestPermission] = useCameraPermissions();
-  const [accelerometerData, setAccelerometerData] = useState({ x: 0, y: 0, z: 0 });
-  const [magnetometerData, setMagnetometerData] = useState({ x: 0, y: 0, z: 0 });
-  const [gyroscopeData, setGyroscopeData] = useState({ x: 0, y: 0, z: 0 });
+  const [orientation, setOrientation] = useState<Orientation>({ pitch: 0, yaw: 0, roll: 0 });
   const [compassHeading, setCompassHeading] = useState(0);
   const [isPointingUp, setIsPointingUp] = useState(false);
+  
+  const orientationTracker = useRef<OrientationTracker | null>(null);
 
-  // Memoize the pointing up calculation to prevent infinite loops
-  const calculatePointingUp = useCallback((data: { x: number; y: number; z: number }) => {
-    const pitch = Math.atan2(-data.y, Math.sqrt(data.x * data.x + data.z * data.z));
-    const roll = Math.atan2(data.x, data.z);
+  // Calculate if pointing up based on pitch
+  const calculatePointingUp = useCallback((orientation: Orientation) => {
+    const pitchDegrees = orientation.pitch * (180 / Math.PI);
     
-    const pitchDegrees = pitch * (180 / Math.PI);
-    const rollDegrees = roll * (180 / Math.PI);
-    
-    const isPitchNearZero = Math.abs(pitchDegrees) < 30;
-    const isRollNearZero = Math.abs(rollDegrees) < 45;
-    
-    return isPitchNearZero && isRollNearZero;
+    // Consider "pointing up" when pitch is negative (phone tilted up)
+    // and within reasonable bounds
+    return pitchDegrees < -20 && pitchDegrees > -90;
   }, []);
+
+  const handleOrientationChange = useCallback((newOrientation: Orientation) => {
+    setOrientation(newOrientation);
+    
+    const pointingUp = calculatePointingUp(newOrientation);
+    setIsPointingUp(pointingUp);
+  }, [calculatePointingUp]);
 
   const handleHeadingChange = useCallback((heading: number) => {
     setCompassHeading(heading);
   }, []);
 
   useEffect(() => {
-    const accelerometerSubscription = Accelerometer.addListener((data) => {
-      setAccelerometerData(data);
-      
-      // Calculate pointing up status
-      const pointingUp = calculatePointingUp(data);
-      setIsPointingUp(pointingUp);
-    });
-
-    const magnetometerSubscription = Magnetometer.addListener((data) => {
-      setMagnetometerData(data);
-    });
-
-    const gyroscopeSubscription = Gyroscope.addListener((data) => {
-      setGyroscopeData(data);
-    });
-
-    Accelerometer.setUpdateInterval(16); // 60 FPS for smooth movement
-    Magnetometer.setUpdateInterval(100);
-    Gyroscope.setUpdateInterval(16); // 60 FPS for smooth movement
+    // Initialize orientation tracker
+    orientationTracker.current = new OrientationTracker(handleOrientationChange);
+    orientationTracker.current.start();
 
     return () => {
-      accelerometerSubscription && accelerometerSubscription.remove();
-      magnetometerSubscription && magnetometerSubscription.remove();
-      gyroscopeSubscription && gyroscopeSubscription.remove();
+      orientationTracker.current?.stop();
     };
-  }, [calculatePointingUp]);
+  }, [handleOrientationChange]);
 
   if (!permission) {
     return (
@@ -93,10 +75,7 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
       <CameraView style={styles.camera} facing="back">
         {/* 3D Sky Dome Overlay */}
         <SkyDome3D 
-          accelerometerData={accelerometerData} 
-          magnetometerData={magnetometerData}
-          gyroscopeData={gyroscopeData}
-          compassHeading={compassHeading}
+          orientation={orientation}
           isPointingUp={isPointingUp} 
         />
         
@@ -109,20 +88,23 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
           </TouchableOpacity>
         </View>
         
-        {/* Accelerometer Debug */}
-        <AccelerometerDebug data={accelerometerData} isPointingUp={isPointingUp} />
-        
-        {/* Orientation Debug */}
-        <OrientationDebug 
-          accelerometerData={accelerometerData} 
-          magnetometerData={magnetometerData}
-          gyroscopeData={gyroscopeData}
-          compassHeading={compassHeading}
+        {/* New Orientation Debug */}
+        <OrientationDebugNew 
+          orientation={orientation}
+          isPointingUp={isPointingUp}
         />
         
         <View style={styles.compassContainer}>
           <Compass onHeadingChange={handleHeadingChange} />
         </View>
+
+        {/* Optional: Reset button for testing */}
+        <TouchableOpacity 
+          style={styles.resetButton} 
+          onPress={() => orientationTracker.current?.reset()}
+        >
+          <Text style={styles.resetButtonText}>Reset</Text>
+        </TouchableOpacity>
       </CameraView>
     </View>
   );
@@ -158,6 +140,21 @@ const styles = StyleSheet.create({
     bottom: 40,
     right: 20,
     zIndex: 2,
+  },
+  resetButton: {
+    position: 'absolute',
+    bottom: 40,
+    left: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    zIndex: 2,
+  },
+  resetButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   permissionText: {
     textAlign: 'center',

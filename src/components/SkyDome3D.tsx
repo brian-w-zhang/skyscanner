@@ -1,167 +1,147 @@
-// src/components/SkyDome3D.tsx
 import React, { useRef, useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Canvas, useFrame, useThree } from '@react-three/fiber/native';
 import * as THREE from 'three';
-import { hybridOrientation } from '../utils/orientationHelpers';
+import { Orientation } from '../utils/orientationTracker';
 
 interface SkyDome3DProps {
-  accelerometerData: { x: number; y: number; z: number };
-  magnetometerData: { x: number; y: number; z: number };
-  gyroscopeData: { x: number; y: number; z: number };
-  compassHeading: number;
+  orientation: Orientation;
   isPointingUp: boolean;
 }
 
 function SkyDome() {
   const meshRef = useRef<THREE.Mesh>(null);
-  
-  // Create a custom material with vertex colors for 8 quadrants
+
   const geometry = useMemo(() => {
     const geo = new THREE.SphereGeometry(50, 32, 32);
-    
-    // Create vertex colors array
     const colors = new Float32Array(geo.attributes.position.count * 3);
     const positions = geo.attributes.position.array;
-    
+
     for (let i = 0; i < geo.attributes.position.count; i++) {
-      const x = positions[i * 3];     // X coordinate
       const y = positions[i * 3 + 1]; // Y coordinate
-      const z = positions[i * 3 + 2]; // Z coordinate
-      
+
       if (y > 0) {
-        // Top hemisphere - 4 strong shades of blue
-        if (x > 0 && z > 0) {
-          // Front-right quadrant - Bright cyan
-          colors[i * 3] = 0.0;     // R
-          colors[i * 3 + 1] = 1.0; // G
-          colors[i * 3 + 2] = 1.0; // B
-        } else if (x > 0 && z < 0) {
-          // Back-right quadrant - Pure blue
-          colors[i * 3] = 0.0;     // R
-          colors[i * 3 + 1] = 0.0; // G
-          colors[i * 3 + 2] = 1.0; // B
-        } else if (x < 0 && z > 0) {
-          // Front-left quadrant - Light blue
-          colors[i * 3] = 0.5;     // R
-          colors[i * 3 + 1] = 0.8; // G
-          colors[i * 3 + 2] = 1.0; // B
-        } else {
-          // Back-left quadrant - Dark blue
-          colors[i * 3] = 0.0;     // R
-          colors[i * 3 + 1] = 0.3; // G
-          colors[i * 3 + 2] = 0.8; // B
-        }
+        // Top half - Sky Blue gradient
+        const normalizedY = Math.max(0, y / 50);
+        colors[i * 3] = 0.5 + normalizedY * 0.3; // R
+        colors[i * 3 + 1] = 0.7 + normalizedY * 0.3; // G
+        colors[i * 3 + 2] = 1.0; // B
       } else {
-        // Bottom hemisphere - 4 strong shades of red
-        if (x > 0 && z > 0) {
-          // Front-right quadrant - Bright red
-          colors[i * 3] = 1.0;     // R
-          colors[i * 3 + 1] = 0.0; // G
-          colors[i * 3 + 2] = 0.0; // B
-        } else if (x > 0 && z < 0) {
-          // Back-right quadrant - Pink
-          colors[i * 3] = 1.0;     // R
-          colors[i * 3 + 1] = 0.0; // G
-          colors[i * 3 + 2] = 0.5; // B
-        } else if (x < 0 && z > 0) {
-          // Front-left quadrant - Orange
-          colors[i * 3] = 1.0;     // R
-          colors[i * 3 + 1] = 0.5; // G
-          colors[i * 3 + 2] = 0.0; // B
-        } else {
-          // Back-left quadrant - Dark red
-          colors[i * 3] = 0.8;     // R
-          colors[i * 3 + 1] = 0.0; // G
-          colors[i * 3 + 2] = 0.0; // B
-        }
+        // Bottom half - Ground/Earth tones
+        const normalizedY = Math.abs(Math.min(0, y / 50));
+        colors[i * 3] = 0.4 + normalizedY * 0.3; // R
+        colors[i * 3 + 1] = 0.2 + normalizedY * 0.3; // G
+        colors[i * 3 + 2] = 0.1; // B
       }
     }
-    
+
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     return geo;
   }, []);
 
   return (
-    <mesh ref={meshRef} geometry={geometry}>
+    <group>
+      {/* Sky Dome - Fixed position at (0, 50, 0) */}
+      <mesh ref={meshRef} geometry={geometry} position={[0, 50, 0]}>
+        <meshBasicMaterial
+          vertexColors={true}
+          side={THREE.BackSide}
+          transparent={true}
+          opacity={0.6}
+        />
+      </mesh>
+
+      {/* Optional: Ground plane for reference */}
+      <mesh position={[0, -5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[200, 200]} />
+        <meshBasicMaterial 
+          color="#2d5a27" 
+          transparent={true} 
+          opacity={0.3}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+function CameraController({ orientation }: { orientation: Orientation }) {
+  const { camera } = useThree();
+  const smoothedRotation = useRef({ pitch: 0, yaw: 0, roll: 0 });
+
+  // Smoothing factor (0 = no smoothing, 1 = instant)
+  const smoothingFactor = 0.1;
+
+  useFrame(() => {
+    // Apply smoothing to prevent jitter
+    smoothedRotation.current.pitch = THREE.MathUtils.lerp(
+      smoothedRotation.current.pitch,
+      orientation.pitch,
+      smoothingFactor
+    );
+    smoothedRotation.current.yaw = THREE.MathUtils.lerp(
+      smoothedRotation.current.yaw,
+      orientation.yaw,
+      smoothingFactor
+    );
+    smoothedRotation.current.roll = THREE.MathUtils.lerp(
+      smoothedRotation.current.roll,
+      orientation.roll,
+      smoothingFactor
+    );
+
+    // Apply rotation to camera
+    camera.rotation.x = smoothedRotation.current.pitch;
+    camera.rotation.y = smoothedRotation.current.yaw;
+    camera.rotation.z = smoothedRotation.current.roll;
+
+    // Keep camera at origin
+    camera.position.set(0, 0, 0);
+    camera.updateMatrixWorld();
+  });
+
+  return null;
+}
+
+function ScanningOverlay({ isPointingUp }: { isPointingUp: boolean }) {
+  const meshRef = useRef<THREE.Mesh>(null);
+
+  useFrame((state) => {
+    if (!meshRef.current) return;
+    const material = meshRef.current.material as THREE.MeshBasicMaterial;
+    // Animate scanning effect when pointing up
+    if (isPointingUp) {
+      material.opacity = 0.1 + Math.sin(state.clock.elapsedTime * 3) * 0.05;
+    } else {
+      material.opacity = 0;
+    }
+  });
+
+  return (
+    <mesh ref={meshRef} position={[0, 0, -1]}>
+      <planeGeometry args={[2, 2]} />
       <meshBasicMaterial 
-        vertexColors={true}
+        color="#00ff00" 
         transparent={true}
-        opacity={0.6}
-        side={THREE.BackSide}
+        opacity={0}
       />
     </mesh>
   );
 }
 
-function CameraController({ 
-  accelerometerData, 
-  gyroscopeData, 
-  compassHeading 
-}: { 
-  accelerometerData: { x: number; y: number; z: number };
-  gyroscopeData: { x: number; y: number; z: number };
-  compassHeading: number;
-}) {
-  const { camera } = useThree();
-  const previousRotation = useRef({ x: 0, y: 0, z: 0 });
-  const lastUpdateTime = useRef(0);
-  
-  useFrame((state) => {
-    const currentTime = state.clock.elapsedTime;
-    const deltaTime = currentTime - lastUpdateTime.current;
-    lastUpdateTime.current = currentTime;
-    
-    // Skip if delta time is too large (first frame or after pause)
-    if (deltaTime > 0.1) return;
-    
-    // Use hybrid approach for smooth, accurate orientation
-    const rotation = hybridOrientation(
-      accelerometerData,
-      gyroscopeData,
-      compassHeading,
-      deltaTime,
-      previousRotation.current
-    );
-    
-    // Apply rotation to camera
-    camera.rotation.x = rotation.x; // Pitch
-    camera.rotation.y = rotation.y; // Yaw (from compass)
-    camera.rotation.z = rotation.z; // Roll
-    
-    // Update previous rotation
-    previousRotation.current = rotation;
-    
-    // Force camera matrix update
-    camera.updateMatrixWorld();
-  });
-  
-  return null;
-}
-
-export default function SkyDome3D({ 
-  accelerometerData, 
-  magnetometerData, 
-  gyroscopeData, 
-  compassHeading, 
-  isPointingUp 
-}: SkyDome3DProps) {
+export default function SkyDome3D({ orientation, isPointingUp }: SkyDome3DProps) {
   return (
     <View style={styles.container} pointerEvents="none">
-      <Canvas 
-        camera={{ 
+      <Canvas
+        camera={{
           position: [0, 0, 0],
           fov: 75,
           near: 0.1,
-          far: 100
+          far: 200,
         }}
       >
-        <CameraController 
-          accelerometerData={accelerometerData} 
-          gyroscopeData={gyroscopeData}
-          compassHeading={compassHeading}
-        />
+        <CameraController orientation={orientation} />
         <SkyDome />
+        <ScanningOverlay isPointingUp={isPointingUp} />
       </Canvas>
     </View>
   );
