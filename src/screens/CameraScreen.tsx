@@ -4,7 +4,8 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import Compass from '../components/Compass';
 import OrientationDebugNew from '../components/OrientationDebugNew';
-import SkyDome3D from '../components/SkyDome3D';
+// import SkyDome3D from '../components/SkyDome3D'; // Commented out for now
+import AccelerometerOverlay from '../components/AccelerometerOverlay';
 import { OrientationTracker, Orientation } from '../utils/orientationTracker';
 
 interface CameraScreenProps {
@@ -73,11 +74,14 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
   return (
     <View style={styles.cameraContainer}>
       <CameraView style={styles.camera} facing="back">
-        {/* 3D Sky Dome Overlay */}
-        <SkyDome3D 
+        {/* Accelerometer-based overlay - NEW */}
+        <AccelerometerOverlay />
+        
+        {/* 3D Sky Dome Overlay - COMMENTED OUT */}
+        {/* <SkyDome3D 
           orientation={orientation}
           isPointingUp={isPointingUp} 
-        />
+        /> */}
         
         <View style={styles.header}>
           <TouchableOpacity

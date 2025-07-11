@@ -140,6 +140,7 @@ export default function SkyDome3D({ orientation, isPointingUp }: SkyDome3DProps)
         }}
       >
         <CameraController orientation={orientation} />
+        {/* Always show the dome */}
         <SkyDome />
         <ScanningOverlay isPointingUp={isPointingUp} />
       </Canvas>

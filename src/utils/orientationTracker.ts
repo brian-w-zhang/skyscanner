@@ -15,12 +15,12 @@ export interface Vector3 {
 export class OrientationTracker {
   private currentOrientation: Orientation = { pitch: 0, yaw: 0, roll: 0 };
   private lastTimestamp: number = 0;
-  private driftCorrectionInterval: number = 2000; // 2 seconds
+  private driftCorrectionInterval: number = 500; // 0.5 seconds (was 2 seconds)
   private lastDriftCorrection: number = 0;
   
   // Smoothing factors
   private gyroSmoothingFactor = 0.95;
-  private driftCorrectionStrength = 0.1;
+  private driftCorrectionStrength = 0.2; // Stronger correction (was 0.1)
   
   // Sensor subscriptions
   private gyroSubscription: any = null;
@@ -70,11 +70,11 @@ export class OrientationTracker {
       this.currentOrientation.yaw += data.y * deltaTime;
       this.currentOrientation.roll += data.z * deltaTime;
 
-      // Apply drift correction periodically
-      if (currentTime - this.lastDriftCorrection > this.driftCorrectionInterval) {
-        this.applyDriftCorrection();
-        this.lastDriftCorrection = currentTime;
-      }
+      // Apply drift correction more frequently
+      // if (currentTime - this.lastDriftCorrection > this.driftCorrectionInterval) {
+      //   this.applyDriftCorrection();
+      //   this.lastDriftCorrection = currentTime;
+      // }
 
       // Notify listeners
       this.onOrientationChange?.(this.currentOrientation);
@@ -88,7 +88,7 @@ export class OrientationTracker {
       this.latestAccelData = data;
     });
 
-    Accelerometer.setUpdateInterval(100); // 10 FPS - only for drift correction
+    Accelerometer.setUpdateInterval(50); // 20 FPS - more frequent for better drift correction
   }
 
   private setupMagnetometer() {
@@ -96,7 +96,7 @@ export class OrientationTracker {
       this.latestMagnetometerData = data;
     });
 
-    Magnetometer.setUpdateInterval(200); // 5 FPS - only for drift correction
+    Magnetometer.setUpdateInterval(100); // 10 FPS - for drift correction
   }
 
   private applyDriftCorrection() {
@@ -109,7 +109,7 @@ export class OrientationTracker {
     const truePitch = Math.atan2(-ay, Math.sqrt(ax * ax + az * az));
     const trueRoll = Math.atan2(ax, az);
 
-    // Apply gentle correction to prevent drift
+    // Apply stronger correction to prevent drift
     this.currentOrientation.pitch = this.lerp(
       this.currentOrientation.pitch,
       truePitch,
