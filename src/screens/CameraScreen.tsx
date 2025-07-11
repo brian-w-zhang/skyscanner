@@ -43,10 +43,15 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
   }, []);
 
   const handleScanStart = useCallback(() => {
-    // Capture the current orientation when scan starts
-    setInitialOrientation({ ...orientation });
+    // Reset the orientation tracker first to zero out any accumulated values
+    orientationTracker.current?.reset();
+    
+    // Set initial orientation to zero since we just reset
+    setInitialOrientation({ pitch: 0, yaw: 0, roll: 0 });
+    
+    // Start scanning
     setIsScanning(true);
-  }, [orientation]);
+  }, []);
 
   const handleScanStop = useCallback(() => {
     setIsScanning(false);

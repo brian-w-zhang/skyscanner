@@ -12,53 +12,38 @@ interface SkyDome3DProps {
 function SkyDome({ initialOrientation }: { initialOrientation: Orientation }) {
   const groupRef = useRef<THREE.Group>(null);
 
-  // Calculate rotation to align the white dome with initial camera direction
+  // Since initialOrientation is now always zero (reset when scan starts),
+  // we don't need to rotate the dome at all. The white part will always be
+  // at the "north pole" of the sphere (top), which corresponds to where
+  // the camera is looking when scan starts.
   const domeRotation = useMemo(() => {
-    // We want to rotate the entire dome so the white part aligns with where camera was looking
-    // Since the white part is at the "north pole" (top), we need to rotate it to match camera direction
-    return new THREE.Euler(
-      -initialOrientation.pitch, // Negative because we're rotating the world, not the camera
-      -initialOrientation.yaw,
-      -initialOrientation.roll,
-      'XYZ'
-    );
-  }, [initialOrientation]);
+    return new THREE.Euler(Math.PI / 2, 0, 0, 'XYZ');
+  }, []);
 
-  // Create the sky dome with custom shader material for smooth gradient
-  const createSkyDomeMaterial = () => {
-    return new THREE.ShaderMaterial({
+  // Create the top section (black - most of the sphere)
+  const createTopSection = () => {
+    // This will be most of the sphere (from 0 to about 2π/3)
+    const geometry = new THREE.SphereGeometry(50, 64, 32, 0, Math.PI * 2, 0, (2 * Math.PI) / 3);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x000000,
       side: THREE.BackSide,
       transparent: true,
-      uniforms: {
-        skyColor: { value: new THREE.Color(1.0, 1.0, 1.0) }, // White for sky
-        groundColor: { value: new THREE.Color(0.0, 0.0, 0.0) }, // Black for ground
-        offset: { value: 0.05 }, // How much of the dome is "sky"
-        exponent: { value: 0.6 }, // Gradient sharpness
-      },
-      vertexShader: `
-        varying vec3 vWorldPosition;
-        void main() {
-          vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-          vWorldPosition = worldPosition.xyz;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 skyColor;
-        uniform vec3 groundColor;
-        uniform float offset;
-        uniform float exponent;
-        varying vec3 vWorldPosition;
-        
-        void main() {
-          float h = normalize(vWorldPosition).y;
-          float ramp = max(offset + h, 0.0);
-          ramp = pow(ramp, exponent);
-          vec3 color = mix(groundColor, skyColor, ramp);
-          gl_FragColor = vec4(color, 0.7);
-        }
-      `,
+      opacity: 0.7,
     });
+    return new THREE.Mesh(geometry, material);
+  };
+
+  // Create the bottom section (white - just the top two rings after rotation)
+  const createBottomSection = () => {
+    // This will be the smaller section (from about 2π/3 to π)
+    const geometry = new THREE.SphereGeometry(50, 64, 32, 0, Math.PI * 2, (2 * Math.PI) / 3, Math.PI / 3);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      side: THREE.BackSide,
+      transparent: true,
+      opacity: 0.7,
+    });
+    return new THREE.Mesh(geometry, material);
   };
 
   // Create grid lines for the dome
@@ -109,49 +94,26 @@ function SkyDome({ initialOrientation }: { initialOrientation: Orientation }) {
 
   return (
     <group ref={groupRef} rotation={[domeRotation.x, domeRotation.y, domeRotation.z]}>
-      {/* Main sky dome with gradient */}
-      <mesh position={[0, 0, 0]}>
-        <sphereGeometry args={[50, 64, 32]} />
-        <primitive object={createSkyDomeMaterial()} />
-      </mesh>
+      {/* Top section (black - most of the sphere) */}
+      <primitive object={createTopSection()} />
+
+      {/* Bottom section (white - top two rings after rotation) */}
+      <primitive object={createBottomSection()} />
 
       {/* Grid lines */}
       <primitive object={createGridLines()} />
 
-      {/* Constellation points */}
-      {Array.from({ length: 200 }, (_, i) => {
-        const phi = Math.acos(2 * Math.random() - 1); // Random latitude
-        const theta = 2 * Math.PI * Math.random(); // Random longitude
-        const radius = 48;
-        
-        const x = radius * Math.sin(phi) * Math.cos(theta);
-        const y = radius * Math.cos(phi);
-        const z = radius * Math.sin(phi) * Math.sin(theta);
-        
-        // Only show stars in the upper hemisphere (sky part)
-        if (y > -5) {
-          return (
-            <mesh key={i} position={[x, y, z]}>
-              <sphereGeometry args={[0.1, 8, 8]} />
-              <meshBasicMaterial
-                color="white"
-                transparent={true}
-                opacity={Math.random() * 0.8 + 0.2}
-              />
-            </mesh>
-          );
-        }
-        return null;
-      })}
+
     </group>
   );
 }
 
-function CameraController({ orientation }: { orientation: Orientation }) {
+function CameraController({ orientation, initialOrientation }: { orientation: Orientation; initialOrientation: Orientation }) {
   const { camera } = useThree();
 
   useFrame(() => {
-    // Apply rotation directly from gyroscope data
+    // Since we reset the orientation tracker when scan starts,
+    // we can use the orientation values directly
     camera.rotation.x = orientation.pitch;
     camera.rotation.y = orientation.yaw;
     camera.rotation.z = orientation.roll;
@@ -175,7 +137,7 @@ export default function SkyDome3D({ orientation, initialOrientation }: SkyDome3D
           far: 200,
         }}
       >
-        <CameraController orientation={orientation} />
+        <CameraController orientation={orientation} initialOrientation={initialOrientation} />
         <SkyDome initialOrientation={initialOrientation} />
       </Canvas>
     </View>
