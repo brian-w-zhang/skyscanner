@@ -1,31 +1,92 @@
 // src/components/Compass.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { Magnetometer, Accelerometer } from 'expo-sensors';
 import { Ionicons } from '@expo/vector-icons';
 
 interface CompassProps {
   style?: any;
-  onHeadingChange?: (heading: number) => void; // Add this line
+  onHeadingChange?: (heading: number) => void;
 }
 
 export default function Compass({ style, onHeadingChange }: CompassProps) {
   const [magnetometerData, setMagnetometerData] = useState({ x: 0, y: 0, z: 0 });
   const [accelerometerData, setAccelerometerData] = useState({ x: 0, y: 0, z: 0 });
   const [heading, setHeading] = useState(0);
+  
+  // Smoothing filter buffers
+  const magBuffer = useRef<Array<{x: number, y: number, z: number}>>([]);
+  const accelBuffer = useRef<Array<{x: number, y: number, z: number}>>([]);
+  const headingBuffer = useRef<number[]>([]);
+  
+  const BUFFER_SIZE = 5; // Adjust for more/less smoothing
+  const HEADING_BUFFER_SIZE = 5;
+
+  // Low-pass filter function
+  const lowPassFilter = (buffer: Array<{x: number, y: number, z: number}>, newData: {x: number, y: number, z: number}) => {
+    buffer.push(newData);
+    if (buffer.length > BUFFER_SIZE) {
+      buffer.shift();
+    }
+    
+    if (buffer.length === 0) return newData;
+    
+    const sum = buffer.reduce((acc, data) => ({
+      x: acc.x + data.x,
+      y: acc.y + data.y,
+      z: acc.z + data.z
+    }), { x: 0, y: 0, z: 0 });
+    
+    return {
+      x: sum.x / buffer.length,
+      y: sum.y / buffer.length,
+      z: sum.z / buffer.length
+    };
+  };
+
+  // Smooth heading changes, handling 360/0 wrap-around
+  const smoothHeading = (newHeading: number) => {
+    headingBuffer.current.push(newHeading);
+    if (headingBuffer.current.length > HEADING_BUFFER_SIZE) {
+      headingBuffer.current.shift();
+    }
+    
+    if (headingBuffer.current.length === 1) return newHeading;
+    
+    // Handle 360/0 degree wrap-around
+    let sum = 0;
+    let count = 0;
+    const first = headingBuffer.current[0];
+    
+    for (const heading of headingBuffer.current) {
+      let diff = heading - first;
+      if (diff > 180) diff -= 360;
+      if (diff < -180) diff += 360;
+      sum += first + diff;
+      count++;
+    }
+    
+    let smoothed = sum / count;
+    if (smoothed < 0) smoothed += 360;
+    if (smoothed >= 360) smoothed -= 360;
+    
+    return smoothed;
+  };
 
   useEffect(() => {
     const magnetometerSubscription = Magnetometer.addListener((data) => {
-      setMagnetometerData(data);
+      const filtered = lowPassFilter(magBuffer.current, data);
+      setMagnetometerData(filtered);
     });
 
     const accelerometerSubscription = Accelerometer.addListener((data) => {
-      setAccelerometerData(data);
+      const filtered = lowPassFilter(accelBuffer.current, data);
+      setAccelerometerData(filtered);
     });
 
-    // Set update intervals
-    Magnetometer.setUpdateInterval(100);
-    Accelerometer.setUpdateInterval(100);
+    // Sync update intervals for both sensors
+    Magnetometer.setUpdateInterval(50);
+    Accelerometer.setUpdateInterval(50);
 
     return () => {
       magnetometerSubscription && magnetometerSubscription.remove();
@@ -38,28 +99,41 @@ export default function Compass({ style, onHeadingChange }: CompassProps) {
     const { x: mx, y: my, z: mz } = magnetometerData;
     const { x: ax, y: ay, z: az } = accelerometerData;
 
-    // Calculate roll and pitch from accelerometer
-    const roll = Math.atan2(ay, az);
-    const pitch = Math.atan2(-ax, Math.sqrt(ay * ay + az * az));
+    // Check if we have valid sensor data
+    if (mx === 0 && my === 0 && mz === 0) return;
+    if (ax === 0 && ay === 0 && az === 0) return;
+
+    // Normalize accelerometer data
+    const accelMagnitude = Math.sqrt(ax * ax + ay * ay + az * az);
+    if (accelMagnitude === 0) return;
+    
+    const axNorm = ax / accelMagnitude;
+    const ayNorm = ay / accelMagnitude;
+    const azNorm = az / accelMagnitude;
+
+    // Calculate roll and pitch from normalized accelerometer
+    const roll = Math.atan2(ayNorm, azNorm);
+    const pitch = Math.atan2(-axNorm, Math.sqrt(ayNorm * ayNorm + azNorm * azNorm));
 
     // Tilt compensation for magnetometer readings
     const magX = mx * Math.cos(pitch) + mz * Math.sin(pitch);
     const magY = mx * Math.sin(roll) * Math.sin(pitch) + my * Math.cos(roll) - mz * Math.sin(roll) * Math.cos(pitch);
 
-    // Use your original working formula - just with tilt-compensated values and flipped Y
+    // Calculate heading - use your original working formula
     const angle = Math.atan2(-magX, -magY) * (180 / Math.PI);
     const compensatedHeading = (angle + 360) % 360;
     
-    const roundedHeading = Math.round(compensatedHeading);
+    // Apply smoothing
+    const smoothedHeading = smoothHeading(compensatedHeading);
+    const roundedHeading = Math.round(smoothedHeading);
+    
     setHeading(roundedHeading);
     
-    // Add this line to export the heading
     if (onHeadingChange) {
       onHeadingChange(roundedHeading);
     }
-  }, [magnetometerData, accelerometerData, onHeadingChange]); // Add onHeadingChange to dependency array
+  }, [magnetometerData, accelerometerData, onHeadingChange]);
 
-  // Rest of your code stays exactly the same...
   const getDirectionText = (heading: number) => {
     if (heading >= 337.5 || heading < 22.5) return 'N';
     if (heading >= 22.5 && heading < 67.5) return 'NE';
@@ -120,7 +194,6 @@ export default function Compass({ style, onHeadingChange }: CompassProps) {
   );
 }
 
-// Your styles stay exactly the same
 const styles = StyleSheet.create({
   compass: {
     alignItems: 'center',

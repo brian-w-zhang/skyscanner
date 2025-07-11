@@ -14,6 +14,7 @@
     "@react-three/drei": "^10.4.4",
     "@react-three/fiber": "^9.2.0",
     "expo": "~53.0.17",
+    "expo-asset": "~11.1.7",
     "expo-blur": "~14.1.5",
     "expo-camera": "^16.1.10",
     "expo-gl": "^15.1.7",
@@ -23,14 +24,14 @@
     "react": "19.0.0",
     "react-native": "0.79.5",
     "react-native-camera": "^4.2.1",
+    "react-native-compass-heading": "^2.0.2",
     "react-native-gesture-handler": "^2.27.1",
     "react-native-reanimated": "^3.18.0",
     "react-native-safe-area-context": "^5.5.1",
     "react-native-screens": "^4.11.1",
     "react-native-svg": "^15.12.0",
     "react-native-vector-icons": "^10.2.0",
-    "three": "^0.178.0",
-    "expo-asset": "~11.1.7"
+    "three": "^0.178.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
