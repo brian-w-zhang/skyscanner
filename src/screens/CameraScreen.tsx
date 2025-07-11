@@ -15,6 +15,7 @@ interface CameraScreenProps {
 export default function CameraScreen({ navigation }: CameraScreenProps) {
   const [permission, requestPermission] = useCameraPermissions();
   const [orientation, setOrientation] = useState<Orientation>({ pitch: 0, yaw: 0, roll: 0 });
+  const [initialOrientation, setInitialOrientation] = useState<Orientation>({ pitch: 0, yaw: 0, roll: 0 });
   const [compassHeading, setCompassHeading] = useState(0);
   const [isPointingUp, setIsPointingUp] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
@@ -42,8 +43,10 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
   }, []);
 
   const handleScanStart = useCallback(() => {
+    // Capture the current orientation when scan starts
+    setInitialOrientation({ ...orientation });
     setIsScanning(true);
-  }, []);
+  }, [orientation]);
 
   const handleScanStop = useCallback(() => {
     setIsScanning(false);
@@ -87,7 +90,10 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
         {!isScanning ? (
           <AccelerometerOverlay onScanStart={handleScanStart} />
         ) : (
-          <SkyDome3D orientation={orientation} />
+          <SkyDome3D 
+            orientation={orientation} 
+            initialOrientation={initialOrientation}
+          />
         )}
         
         <View style={styles.header}>
