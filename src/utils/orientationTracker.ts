@@ -15,12 +15,12 @@ export interface Vector3 {
 export class OrientationTracker {
   private currentOrientation: Orientation = { pitch: 0, yaw: 0, roll: 0 };
   private lastTimestamp: number = 0;
-  private driftCorrectionInterval: number = 500; // 0.5 seconds (was 2 seconds)
+  private driftCorrectionInterval: number = 2000; // 0.5 seconds (was 2 seconds)
   private lastDriftCorrection: number = 0;
   
   // Smoothing factors
   private gyroSmoothingFactor = 0.95;
-  private driftCorrectionStrength = 0.2; // Stronger correction (was 0.1)
+  private driftCorrectionStrength = 0.1; // Stronger correction (was 0.1)
   
   // Sensor subscriptions
   private gyroSubscription: any = null;
@@ -80,7 +80,7 @@ export class OrientationTracker {
       this.onOrientationChange?.(this.currentOrientation);
     });
 
-    Gyroscope.setUpdateInterval(16); // 60 FPS
+    Gyroscope.setUpdateInterval(1); // buttery smooth 1000 Hz updates
   }
 
   private setupAccelerometer() {
