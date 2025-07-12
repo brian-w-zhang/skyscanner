@@ -11,6 +11,8 @@ interface SkyDome3DProps {
 
 function SkyDome({ initialOrientation }: { initialOrientation: Orientation }) {
   const groupRef = useRef<THREE.Group>(null);
+  const starbitRef = useRef<THREE.InstancedMesh>(null);
+  const timeRef = useRef(0);
 
   // Since initialOrientation is now always zero (reset when scan starts),
   // we don't need to rotate the dome at all. The white part will always be
@@ -92,6 +94,133 @@ function SkyDome({ initialOrientation }: { initialOrientation: Orientation }) {
     return lines;
   };
 
+  const createStarbits = () => {
+    const radius = 49; // Slightly smaller than dome to prevent z-fighting
+    const starSize = 0.6; // Size of each starbit
+    
+    // Use simple plane geometry for better compatibility
+    const geometry = new THREE.PlaneGeometry(starSize, starSize);
+    
+    // Use standard material with emissive properties for sparkle
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x4488ff,
+      transparent: true,
+      opacity: 0.8,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending, // Makes stars glow
+    });
+
+    // Calculate optimal star count based on area coverage
+    const phiStart = (2 * Math.PI) / 3 + 0.05;
+    const phiEnd = Math.PI;
+    const phiRange = phiEnd - phiStart;
+    const avgRadius = radius * Math.sin((phiStart + phiEnd) / 2);
+    const circumference = 2 * Math.PI * avgRadius;
+    
+    // Aim for consistent spacing (about 4 units apart)
+    const spacing = 4;
+    const starsPerRing = Math.floor(circumference / spacing);
+    const numRings = Math.floor((phiRange * radius) / spacing);
+    const starbitCount = Math.min(starsPerRing * numRings, 600); // Cap at 600 for performance
+
+    const instancedMesh = new THREE.InstancedMesh(geometry, material, starbitCount);
+
+    // Store initial scales and phases for animation
+    const initialScales = new Float32Array(starbitCount);
+    const animationPhases = new Float32Array(starbitCount);
+    
+    for (let i = 0; i < starbitCount; i++) {
+      initialScales[i] = 0.7 + Math.random() * 0.6; // Random base scale
+      animationPhases[i] = Math.random() * Math.PI * 2; // Random animation phase
+    }
+
+    const dummy = new THREE.Object3D();
+    let index = 0;
+
+    // Distribute stars evenly across the white section
+    for (let ring = 0; ring < numRings && index < starbitCount; ring++) {
+      const phi = phiStart + (ring / numRings) * phiRange;
+      const ringRadius = radius * Math.sin(phi);
+      const y = radius * Math.cos(phi);
+      const starsInThisRing = Math.floor(ringRadius / radius * starsPerRing);
+      
+      for (let star = 0; star < starsInThisRing && index < starbitCount; star++) {
+        const theta = (star / starsInThisRing) * Math.PI * 2;
+        
+        const x = ringRadius * Math.cos(theta);
+        const z = ringRadius * Math.sin(theta);
+
+        dummy.position.set(x, y, z);
+        dummy.lookAt(0, 0, 0); // Ensure the starbit faces inward
+        dummy.scale.setScalar(initialScales[index]);
+        dummy.updateMatrix();
+
+        instancedMesh.setMatrixAt(index, dummy.matrix);
+        index++;
+      }
+    }
+
+    instancedMesh.instanceMatrix.needsUpdate = true;
+    
+    // Store animation data on the mesh for later use
+    instancedMesh.userData.initialScales = initialScales;
+    instancedMesh.userData.animationPhases = animationPhases;
+    instancedMesh.userData.starPositions = [];
+    
+    // Store positions for animation
+    for (let i = 0; i < index; i++) {
+      const matrix = new THREE.Matrix4();
+      instancedMesh.getMatrixAt(i, matrix);
+      const position = new THREE.Vector3();
+      const rotation = new THREE.Quaternion();
+      const scale = new THREE.Vector3();
+      matrix.decompose(position, rotation, scale);
+      instancedMesh.userData.starPositions.push({ position, rotation });
+    }
+    
+    return instancedMesh;
+  };
+
+  // Create starbits once and store reference
+  const starbits = useMemo(() => createStarbits(), []);
+
+  // Animation loop for sparkle effect
+  useFrame((state) => {
+    timeRef.current = state.clock.elapsedTime;
+    
+    if (starbits && starbits.userData.initialScales) {
+      const dummy = new THREE.Object3D();
+      const { initialScales, animationPhases, starPositions } = starbits.userData;
+      
+      // Update each star's scale and opacity for sparkle effect
+      for (let i = 0; i < starPositions.length; i++) {
+        const { position, rotation } = starPositions[i];
+        const phase = animationPhases[i];
+        const baseScale = initialScales[i];
+        
+        // Calculate pulsing scale
+        const pulseScale = baseScale * (0.8 + 0.4 * Math.sin(timeRef.current * 3 + phase));
+        
+        // Calculate sparkle opacity
+        const sparkleOpacity = 0.6 + 0.4 * Math.sin(timeRef.current * 6 + phase * 2);
+        
+        dummy.position.copy(position);
+        dummy.quaternion.copy(rotation);
+        dummy.scale.setScalar(pulseScale);
+        dummy.updateMatrix();
+        
+        starbits.setMatrixAt(i, dummy.matrix);
+      }
+      
+      starbits.instanceMatrix.needsUpdate = true;
+      
+      // Update material opacity for sparkle effect
+      if (starbits.material) {
+        starbits.material.opacity = 0.7 + 0.3 * Math.sin(timeRef.current * 4);
+      }
+    }
+  });
+
   return (
     <group ref={groupRef} rotation={[domeRotation.x, domeRotation.y, domeRotation.z]}>
       {/* Top section (black - most of the sphere) */}
@@ -103,7 +232,8 @@ function SkyDome({ initialOrientation }: { initialOrientation: Orientation }) {
       {/* Grid lines */}
       <primitive object={createGridLines()} />
 
-
+      {/* Sparkling starbits in the white section */}
+      <primitive object={starbits} ref={starbitRef} />
     </group>
   );
 }
