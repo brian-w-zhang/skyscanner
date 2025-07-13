@@ -13,7 +13,7 @@ export interface ScanCoverage {
 
 export class ScanTracker {
   private scannedPoints: ScanPoint[] = [];
-  private gridResolution: number = 14; // Higher = more accurate but slower
+  private gridResolution: number = 13; // Higher = more accurate but slower
   private fovRadians: number = (75 * Math.PI) / 180; // 75 degrees camera FOV
   private minDwellTime: number = 80; // Minimum time between captures (ms)
   private lastCaptureTime: number = 0;
@@ -22,10 +22,51 @@ export class ScanTracker {
   private readonly WHITE_DOME_PHI_START = (2 * Math.PI) / 3; // Start of white section
   private readonly WHITE_DOME_PHI_END = Math.PI; // End of white section
   
+  // Precomputed constants for optimization
+  private readonly WHITE_DOME_PHI_RANGE = this.WHITE_DOME_PHI_END - this.WHITE_DOME_PHI_START;
+  private readonly WHITE_DOME_PHI_START_WITH_TOLERANCE = this.WHITE_DOME_PHI_START - 0.05;
+  private readonly WHITE_DOME_PHI_END_WITH_TOLERANCE = this.WHITE_DOME_PHI_END + 0.05;
+  private readonly TWO_PI = 2 * Math.PI;
+  private readonly HALF_FOV = this.fovRadians / 2;
+  
+  // Pre-allocated 2D grid for coverage calculation
+  private coverageGrid: boolean[][];
+  
+  // FOV sampling pattern (precomputed)
+  private readonly fovSamplePattern: { u: number; v: number }[];
+  
   private onCoverageChange?: (coverage: ScanCoverage) => void;
 
   constructor(onCoverageChange?: (coverage: ScanCoverage) => void) {
     this.onCoverageChange = onCoverageChange;
+    
+    // Pre-allocate coverage grid
+    this.coverageGrid = Array(this.gridResolution).fill(null).map(() => 
+      Array(this.gridResolution).fill(false)
+    );
+    
+    // Precompute FOV sampling pattern
+    this.fovSamplePattern = this.generateFOVPattern();
+  }
+
+  // Precompute FOV sampling pattern once
+  private generateFOVPattern(): { u: number; v: number }[] {
+    const pattern = [];
+    const samples = 10;
+    
+    for (let i = 0; i < samples; i++) {
+      for (let j = 0; j < samples; j++) {
+        const u = (i / (samples - 1)) * 2 - 1;
+        const v = (j / (samples - 1)) * 2 - 1;
+        
+        // Only include points within the circular FOV
+        if (u * u + v * v <= 1) {
+          pattern.push({ u, v });
+        }
+      }
+    }
+    
+    return pattern;
   }
 
   // Convert camera orientation to spherical coordinates
@@ -40,54 +81,42 @@ export class ScanTracker {
       z: -Math.cos(orientation.yaw) * Math.cos(adjustedPitch)
     };
 
-    // Convert to spherical coordinates
-    const phi = Math.acos(lookDirection.y); // Polar angle (0 to π)
+    // Convert to spherical coordinates with clamping to avoid NaN
+    const phi = Math.acos(Math.max(-1, Math.min(1, lookDirection.y))); // Polar angle (0 to π)
     const theta = Math.atan2(lookDirection.z, lookDirection.x); // Azimuthal angle (-π to π)
     
     return {
       phi: phi,
-      theta: theta < 0 ? theta + 2 * Math.PI : theta // Normalize to 0 to 2π
+      theta: theta < 0 ? theta + this.TWO_PI : theta // Normalize to 0 to 2π
     };
   }
 
-  // Check if a point is within the white dome area
+  // Check if a point is within the white dome area (optimized with precomputed values)
   private isInWhiteDome(phi: number): boolean {
-    // Add tolerance to white dome bounds
-    const tolerance = 0.05; // Allow slight deviation
-    return phi >= this.WHITE_DOME_PHI_START - tolerance && phi <= this.WHITE_DOME_PHI_END + tolerance;
+    return phi >= this.WHITE_DOME_PHI_START_WITH_TOLERANCE && phi <= this.WHITE_DOME_PHI_END_WITH_TOLERANCE;
   }
 
-  // Calculate field of view coverage area at given orientation
+  // Calculate field of view coverage area at given orientation (optimized)
   private calculateFOVCoverage(centerPhi: number, centerTheta: number): ScanPoint[] {
     const points: ScanPoint[] = [];
-    const halfFOV = this.fovRadians / 2;
     const timestamp = Date.now();
+    const sinCenterPhi = Math.sin(Math.max(centerPhi, 0.001)); // Precompute once
 
-    // Sample points within the FOV cone
-    const samples = 10; // Number of samples in each direction
-    for (let i = 0; i < samples; i++) {
-      for (let j = 0; j < samples; j++) {
-        // Create a grid within the FOV cone
-        const u = (i / (samples - 1)) * 2 - 1; // -1 to 1
-        const v = (j / (samples - 1)) * 2 - 1; // -1 to 1
-        
-        // Only include points within the circular FOV
-        if (u * u + v * v <= 1) {
-          const offsetPhi = centerPhi + v * halfFOV;
-          const offsetTheta = centerTheta + u * halfFOV / Math.sin(Math.max(centerPhi, 0.001));
-          
-          // Normalize theta to 0-2π range
-          const normalizedTheta = ((offsetTheta % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-          
-          // Only add if within bounds and in white dome
-          if (offsetPhi >= 0 && offsetPhi <= Math.PI && this.isInWhiteDome(offsetPhi)) {
-            points.push({
-              phi: offsetPhi,
-              theta: normalizedTheta,
-              timestamp
-            });
-          }
-        }
+    // Use precomputed pattern instead of nested loops
+    for (const { u, v } of this.fovSamplePattern) {
+      const offsetPhi = centerPhi + v * this.HALF_FOV;
+      const offsetTheta = centerTheta + u * this.HALF_FOV / sinCenterPhi;
+      
+      // Normalize theta to 0-2π range
+      const normalizedTheta = ((offsetTheta % this.TWO_PI) + this.TWO_PI) % this.TWO_PI;
+      
+      // Only add if within bounds and in white dome
+      if (offsetPhi >= 0 && offsetPhi <= Math.PI && this.isInWhiteDome(offsetPhi)) {
+        points.push({
+          phi: offsetPhi,
+          theta: normalizedTheta,
+          timestamp
+        });
       }
     }
 
@@ -124,38 +153,55 @@ export class ScanTracker {
     this.onCoverageChange?.(coverage);
   }
 
-  // Calculate total coverage percentage
+  // Calculate total coverage percentage (optimized with 2D array)
   private calculateCoverage(): ScanCoverage {
     if (this.scannedPoints.length === 0) {
       return { totalCoverage: 0, scannedPoints: [] };
     }
 
-    // Create a grid to track covered areas
-    const grid = new Set<string>();
-    const gridSize = this.gridResolution;
+    // Reset grid efficiently
+    for (let i = 0; i < this.gridResolution; i++) {
+      for (let j = 0; j < this.gridResolution; j++) {
+        this.coverageGrid[i][j] = false;
+      }
+    }
     
     // Mark grid cells as covered
     for (const point of this.scannedPoints) {
       // Only consider points in white dome
       if (this.isInWhiteDome(point.phi)) {
         // Convert to grid coordinates
-        const gridPhi = Math.floor(((point.phi - this.WHITE_DOME_PHI_START) / (this.WHITE_DOME_PHI_END - this.WHITE_DOME_PHI_START)) * gridSize);
-        const gridTheta = Math.floor((point.theta / (2 * Math.PI)) * gridSize);
+        const gridPhi = Math.floor(((point.phi - this.WHITE_DOME_PHI_START) / this.WHITE_DOME_PHI_RANGE) * this.gridResolution);
+        const gridTheta = Math.floor((point.theta / this.TWO_PI) * this.gridResolution);
         
-        // Add to covered set
-        grid.add(`${gridPhi},${gridTheta}`);
+        // Bounds checking and mark as covered
+        if (gridPhi >= 0 && gridPhi < this.gridResolution && gridTheta >= 0 && gridTheta < this.gridResolution) {
+          this.coverageGrid[gridPhi][gridTheta] = true;
+        }
+      }
+    }
+
+    // Count covered cells
+    let coveredCells = 0;
+    for (let i = 0; i < this.gridResolution; i++) {
+      for (let j = 0; j < this.gridResolution; j++) {
+        if (this.coverageGrid[i][j]) {
+          coveredCells++;
+        }
       }
     }
 
     // Calculate total possible cells in white dome
-    const totalCells = gridSize * gridSize;
-    const coveredCells = grid.size;
-    
+    const totalCells = this.gridResolution * this.gridResolution;
     const coverage = (coveredCells / totalCells) * 100;
     
+    // Apply tolerance threshold
+    const tolerance = 4; // Allow up to 4% uncovered cells
+    const adjustedCoverage = coverage >= (100 - tolerance) ? 100 : coverage;
+
     return {
-      totalCoverage: Math.min(coverage, 100),
-      scannedPoints: this.scannedPoints
+      totalCoverage: Math.min(adjustedCoverage, 100),
+      scannedPoints: this.scannedPoints,
     };
   }
 

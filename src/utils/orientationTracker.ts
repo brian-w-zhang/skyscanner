@@ -80,7 +80,7 @@ export class OrientationTracker {
       this.onOrientationChange?.(this.currentOrientation);
     });
 
-    Gyroscope.setUpdateInterval(10); // buttery smooth 1000 Hz updates
+    Gyroscope.setUpdateInterval(1); // buttery smooth 1000 Hz updates
   }
 
   private setupAccelerometer() {
