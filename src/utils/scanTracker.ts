@@ -13,7 +13,7 @@ export interface ScanCoverage {
 
 export class ScanTracker {
   private scannedPoints: ScanPoint[] = [];
-  private gridResolution: number = 16; // Higher = more accurate but slower
+  private gridResolution: number = 40; // Higher = more accurate but slower
   private fovRadians: number = (75 * Math.PI) / 180; // 75 degrees camera FOV
   private minDwellTime: number = 100; // Minimum time between captures (ms)
   private lastCaptureTime: number = 0;
