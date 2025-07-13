@@ -44,56 +44,41 @@ function SkyDome({ initialOrientation, onLoaded }: { initialOrientation: Orienta
       color: 0xffffff,
       side: THREE.BackSide,
       transparent: true,
-      opacity: 0.1,
+      opacity: 0.05,
     });
     return new THREE.Mesh(geometry, material);
   };
 
   // Create grid lines for the dome
-  const createGridLines = () => {
-    const lines = new THREE.Group();
-    const radius = 49; // Slightly smaller than dome to prevent z-fighting
+const createGridLines = () => {
+  const lines = new THREE.Group();
+  const radius = 49; // Slightly smaller than dome to prevent z-fighting
 
-    // Horizontal rings (latitude lines)
-    for (let i = 1; i <= 8; i++) {
-      const angle = (i * Math.PI) / 9; // 0 to PI
-      const y = radius * Math.cos(angle);
-      const ringRadius = radius * Math.sin(angle);
+  // Horizontal rings (latitude lines)
+  for (let i = 7; i <= 9; i++) { // Ensure rings are strictly in the white section (skip boundary at i=6)
+    const angle = (i * Math.PI) / 9; // Calculate angle
+    // Only include rings that are WITHIN the white section
+    // White section spans from (2 * Math.PI) / 3 to Math.PI
+    if (angle < (2 * Math.PI) / 3 || angle > (Math.PI)) continue;
 
-      const geometry = new THREE.RingGeometry(ringRadius - 0.1, ringRadius + 0.1, 64);
-      const material = new THREE.MeshBasicMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.3,
-        side: THREE.DoubleSide,
-      });
-      const ring = new THREE.Mesh(geometry, material);
-      ring.position.y = y;
-      ring.rotation.x = Math.PI / 2; // Rotate to be horizontal
-      lines.add(ring);
-    }
+    const y = radius * Math.cos(angle);
+    const ringRadius = radius * Math.sin(angle);
 
-    // Vertical lines (longitude lines)
-    for (let i = 0; i < 12; i++) {
-      const angle = (i * Math.PI * 2) / 12;
-      const curve = new THREE.EllipseCurve(0, 0, radius, radius, 0, Math.PI, false, 0);
-      const points = curve.getPoints(32);
-      const geometry = new THREE.BufferGeometry().setFromPoints(points.map(p => new THREE.Vector3(p.x, p.y, 0)));
-      
-      const material = new THREE.LineBasicMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.3,
-      });
-      
-      const line = new THREE.Line(geometry, material);
-      line.rotation.z = angle;
-      line.rotation.x = Math.PI / 2; // Rotate to be vertical
-      lines.add(line);
-    }
+    const geometry = new THREE.RingGeometry(ringRadius - 0.1, ringRadius + 0.1, 64);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.3,
+      side: THREE.DoubleSide,
+    });
+    const ring = new THREE.Mesh(geometry, material);
+    ring.position.y = y;
+    ring.rotation.x = Math.PI / 2; // Rotate to be horizontal
+    lines.add(ring);
+  }
 
-    return lines;
-  };
+  return lines;
+};
 
   // Signal that the dome is loaded after component mounts
   useEffect(() => {

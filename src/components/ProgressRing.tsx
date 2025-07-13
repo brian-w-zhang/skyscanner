@@ -11,7 +11,7 @@ interface ProgressRingProps {
 export default function ProgressRing({ 
   progress, 
   size = 80, 
-  strokeWidth = 6 
+  strokeWidth = 8 
 }: ProgressRingProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
@@ -42,7 +42,7 @@ export default function ProgressRing({
           fill="none"
           strokeDasharray={strokeDasharray}
           strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
+          strokeLinecap="butt"
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
           strokeOpacity={0.9}
         />
@@ -76,11 +76,8 @@ const styles = StyleSheet.create({
   },
   percentageText: {
     color: '#ffffff',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
   },
 });
