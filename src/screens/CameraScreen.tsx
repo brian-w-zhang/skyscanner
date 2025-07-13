@@ -109,65 +109,67 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
 
   return (
     <View style={styles.cameraContainer}>
-      <CameraView style={styles.camera} facing="back">
-        {/* Show either AccelerometerOverlay or SkyDome3D based on scanning state */}
-        {!isScanning ? (
-          <AccelerometerOverlay onScanStart={handleScanStart} />
-        ) : (
-          <SkyDome3D 
-            orientation={orientation} 
-            initialOrientation={initialOrientation}
-          />
-        )}
-        
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="chevron-back" size={24} color="white" />
-          </TouchableOpacity>
-        </View>
-        
-        {/* Progress Ring - only show when scanning */}
-        {isScanning && (
-          <View style={styles.progressRingContainer}>
-            <ProgressRing progress={scanCoverage.totalCoverage} size={100} strokeWidth={8} />
-          </View>
-        )}
-        
-        {/* New Orientation Debug */}
-        <OrientationDebugNew 
-          orientation={orientation}
-          isPointingUp={isPointingUp}
+      <CameraView style={styles.camera} facing="back" />
+      
+      {/* All overlays moved outside CameraView with absolute positioning */}
+      
+      {/* Show either AccelerometerOverlay or SkyDome3D based on scanning state */}
+      {!isScanning ? (
+        <AccelerometerOverlay onScanStart={handleScanStart} />
+      ) : (
+        <SkyDome3D 
+          orientation={orientation} 
+          initialOrientation={initialOrientation}
         />
-        
-        <View style={styles.compassContainer}>
-          <Compass onHeadingChange={handleHeadingChange} />
-        </View>
-
-        {/* Reset button - also stops scanning when pressed */}
-        <TouchableOpacity 
-          style={styles.resetButton} 
-          onPress={() => {
-            orientationTracker.current?.reset();
-            scanTracker.current?.reset();
-            handleScanStop();
-          }}
+      )}
+      
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
         >
-          <Text style={styles.resetButtonText}>Reset</Text>
+          <Ionicons name="chevron-back" size={24} color="white" />
         </TouchableOpacity>
+      </View>
+      
+      {/* Progress Ring - only show when scanning */}
+      {isScanning && (
+        <View style={styles.progressRingContainer}>
+          <ProgressRing progress={scanCoverage.totalCoverage} size={100} strokeWidth={8} />
+        </View>
+      )}
+      
+      {/* New Orientation Debug */}
+      {/* <OrientationDebugNew 
+        orientation={orientation}
+        isPointingUp={isPointingUp}
+      /> */}
+      
+      <View style={styles.compassContainer}>
+        <Compass onHeadingChange={handleHeadingChange} />
+      </View>
 
-        {/* Stop scanning button - only shows when scanning */}
-        {isScanning && (
-          <TouchableOpacity
-            style={styles.stopScanButton}
-            onPress={handleScanStop}
-          >
-            <Text style={styles.stopScanButtonText}>Stop Scan</Text>
-          </TouchableOpacity>
-        )}
-      </CameraView>
+      {/* Reset button - also stops scanning when pressed */}
+      <TouchableOpacity 
+        style={styles.resetButton} 
+        onPress={() => {
+          orientationTracker.current?.reset();
+          scanTracker.current?.reset();
+          handleScanStop();
+        }}
+      >
+        <Text style={styles.resetButtonText}>Reset Gyroscope (debug only)</Text>
+      </TouchableOpacity>
+
+      {/* Stop scanning button - only shows when scanning */}
+      {isScanning && (
+        <TouchableOpacity
+          style={styles.stopScanButton}
+          onPress={handleScanStop}
+        >
+          <Text style={styles.stopScanButtonText}>Stop Scan</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -175,16 +177,18 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'rgb(23, 23, 23)', // Changed from white to grey
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
   cameraContainer: {
     flex: 1,
+    backgroundColor: 'rgba(23, 23, 23, 0.8)', // Add grey background here too
   },
   camera: {
     flex: 1,
+    backgroundColor: 'rgba(23, 23, 23, 0.8)', // Add grey background to camera view
   },
   header: {
     position: 'absolute',
@@ -227,7 +231,7 @@ const styles = StyleSheet.create({
   },
   stopScanButton: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 270,
     left: 0,
     right: 0,
     alignItems: 'center',

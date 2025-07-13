@@ -52,15 +52,15 @@ export default function AccelerometerOverlay({ onScanStart }: AccelerometerOverl
 
     if (pitchDegrees <= GREEN_THRESHOLD && rollDegrees <= GREEN_THRESHOLD) {
       color = '#00ff00'; // Green - perfect
-      opacity = 0.15;
+      opacity = 0.8;
       message = 'Perfect! Pointing at the sky';
     } else if (pitchDegrees <= YELLOW_THRESHOLD && rollDegrees <= YELLOW_THRESHOLD) {
       color = '#ffff00'; // Yellow - close
-      opacity = 0.25;
+      opacity = 0.7;
       message = 'Almost there! Adjust phone slightly';
     } else {
       color = '#ff0000'; // Red - needs adjustment
-      opacity = 0.35;
+      opacity = 0.6;
       message = 'Point camera straight up at the sky';
     }
 
@@ -76,23 +76,26 @@ export default function AccelerometerOverlay({ onScanStart }: AccelerometerOverl
 
   return (
     <>
-      {/* Colored overlay */}
-      <View
+      {/* Grid container with colored border glow */}
+      <View 
         style={[
-          styles.overlay,
+          styles.gridContainer,
           {
-            backgroundColor: thresholdState.color,
-            opacity: thresholdState.opacity,
-          },
-        ]}
+            borderColor: thresholdState.color,
+            shadowColor: thresholdState.color,
+            shadowOpacity: thresholdState.opacity,
+          }
+        ]} 
         pointerEvents="none"
-      />
-
-      {/* Grid container */}
-      <View style={styles.gridContainer} pointerEvents="none">
+      >
         {/* Message box */}
-        <View style={styles.messageBox}>
+        <View style={[styles.messageBox, { borderBottomColor: thresholdState.color }]}>
           <Text style={styles.messageText}>{thresholdState.message}</Text>
+        </View>
+
+        {/* Debug label */}
+        <View style={styles.debugLabelContainer}>
+          <Text style={styles.debugLabelText}>Accelerometer debug info</Text>
         </View>
 
         {/* Pitch and roll boxes */}
@@ -127,33 +130,43 @@ export default function AccelerometerOverlay({ onScanStart }: AccelerometerOverl
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1,
-  },
   gridContainer: {
     position: 'absolute',
     top: '50%',
-    left: 40, // Increased padding from the edges
-    right: 40, // Increased padding from the edges
-    height: 150, // Adjusted height for the grid
+    left: 40,
+    right: 40,
+    height: 180, // Increased height to accommodate the new row
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     borderRadius: 15,
-    borderWidth: 1,
-    borderColor: 'white',
+    borderWidth: 3, // Increased border width for better visibility
     zIndex: 2,
-    transform: [{ translateY: -75 }], // Center vertically
+    transform: [{ translateY: -90 }], // Adjusted to center the taller container
+    // Shadow properties for the glow effect
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowRadius: 20, // Larger radius for more pronounced glow
+    elevation: 20, // For Android shadow
   },
   messageBox: {
-    flex: 2, // Larger area for the message
+    flex: 2,
     justifyContent: 'center',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: 'white',
+  },
+  debugLabelContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  debugLabelText: {
+    color: 'white',
+    fontSize: 12,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    opacity: 0.8,
   },
   messageText: {
     color: 'white',
@@ -162,17 +175,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   dataRow: {
-    flex: 1, // Smaller area for pitch and roll
+    flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 10, // Padding between the two boxes
+    paddingHorizontal: 10,
   },
   dataBox: {
-    flex: 1, // Equal width for pitch and roll boxes
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 5, // Space between the boxes
+    marginHorizontal: 5,
   },
   dataText: {
     color: 'white',
@@ -181,7 +194,7 @@ const styles = StyleSheet.create({
   },
   scanButtonContainer: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 270,
     left: 0,
     right: 0,
     alignItems: 'center',
@@ -189,24 +202,14 @@ const styles = StyleSheet.create({
   },
   scanButton: {
     backgroundColor: 'rgba(0, 255, 0, 0.8)',
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 25,
-    borderWidth: 2,
-    borderColor: 'white',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 20,
   },
   scanButtonText: {
-    color: 'white',
-    fontSize: 18,
+    color: 'white', // White text
+    fontSize: 16,
     fontWeight: 'bold',
-    textAlign: 'center',
+    textAlign: 'center', // Center text
   },
 });

@@ -11,7 +11,7 @@ export default function InfoCard() {
       />
       <View style={styles.textContainer}>
         <Text style={styles.subtitle}>Hi Aaron, I'm Brian.</Text>
-        <Text style={styles.bodyText}>This is my take on the Starlink app's check for obstructions tool.</Text>
+        <Text style={styles.bodyText}>This is my take on reverse engineering the check for obstructions tool.</Text>
       </View>
     </View>
   );
