@@ -42,7 +42,7 @@ function SkyDome({ initialOrientation }: { initialOrientation: Orientation }) {
       color: 0xffffff,
       side: THREE.BackSide,
       transparent: true,
-      opacity: 0.7,
+      opacity: 0.1,
     });
     return new THREE.Mesh(geometry, material);
   };

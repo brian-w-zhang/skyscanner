@@ -6,7 +6,9 @@ import Compass from '../components/Compass';
 import OrientationDebugNew from '../components/OrientationDebugNew';
 import SkyDome3D from '../components/SkyDome3D';
 import AccelerometerOverlay from '../components/AccelerometerOverlay';
+import ProgressRing from '../components/ProgressRing';
 import { OrientationTracker, Orientation } from '../utils/orientationTracker';
+import { ScanTracker, ScanCoverage } from '../utils/scanTracker';
 
 interface CameraScreenProps {
   navigation: any;
@@ -19,8 +21,10 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
   const [compassHeading, setCompassHeading] = useState(0);
   const [isPointingUp, setIsPointingUp] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [scanCoverage, setScanCoverage] = useState<ScanCoverage>({ totalCoverage: 0, scannedPoints: [] });
   
   const orientationTracker = useRef<OrientationTracker | null>(null);
+  const scanTracker = useRef<ScanTracker | null>(null);
 
   // Calculate if pointing up based on pitch
   const calculatePointingUp = useCallback((orientation: Orientation) => {
@@ -36,7 +40,16 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
     
     const pointingUp = calculatePointingUp(newOrientation);
     setIsPointingUp(pointingUp);
-  }, [calculatePointingUp]);
+
+    // Update scan tracking if scanning is active
+    if (isScanning && scanTracker.current) {
+      scanTracker.current.updateOrientation(newOrientation);
+    }
+  }, [calculatePointingUp, isScanning]);
+
+  const handleScanCoverageChange = useCallback((coverage: ScanCoverage) => {
+    setScanCoverage(coverage);
+  }, []);
 
   const handleHeadingChange = useCallback((heading: number) => {
     setCompassHeading(heading);
@@ -48,6 +61,9 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
     
     // Set initial orientation to zero since we just reset
     setInitialOrientation({ pitch: 0, yaw: 0, roll: 0 });
+    
+    // Reset scan tracker
+    scanTracker.current?.reset();
     
     // Start scanning
     setIsScanning(true);
@@ -62,10 +78,13 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
     orientationTracker.current = new OrientationTracker(handleOrientationChange);
     orientationTracker.current.start();
 
+    // Initialize scan tracker
+    scanTracker.current = new ScanTracker(handleScanCoverageChange);
+
     return () => {
       orientationTracker.current?.stop();
     };
-  }, [handleOrientationChange]);
+  }, [handleOrientationChange, handleScanCoverageChange]);
 
   if (!permission) {
     return (
@@ -110,6 +129,13 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
           </TouchableOpacity>
         </View>
         
+        {/* Progress Ring - only show when scanning */}
+        {isScanning && (
+          <View style={styles.progressRingContainer}>
+            <ProgressRing progress={scanCoverage.totalCoverage} size={100} strokeWidth={8} />
+          </View>
+        )}
+        
         {/* New Orientation Debug */}
         <OrientationDebugNew 
           orientation={orientation}
@@ -125,6 +151,7 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
           style={styles.resetButton} 
           onPress={() => {
             orientationTracker.current?.reset();
+            scanTracker.current?.reset();
             handleScanStop();
           }}
         >
@@ -169,6 +196,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     borderRadius: 20,
     padding: 8,
+  },
+  progressRingContainer: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -50 }, { translateY: -50 }],
+    zIndex: 2,
   },
   compassContainer: {
     position: 'absolute',
