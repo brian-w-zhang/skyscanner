@@ -13,9 +13,9 @@ export interface ScanCoverage {
 
 export class ScanTracker {
   private scannedPoints: ScanPoint[] = [];
-  private gridResolution: number = 40; // Higher = more accurate but slower
+  private gridResolution: number = 14; // Higher = more accurate but slower
   private fovRadians: number = (75 * Math.PI) / 180; // 75 degrees camera FOV
-  private minDwellTime: number = 100; // Minimum time between captures (ms)
+  private minDwellTime: number = 80; // Minimum time between captures (ms)
   private lastCaptureTime: number = 0;
   
   // White dome bounds (matching your SkyDome component)
@@ -64,7 +64,7 @@ export class ScanTracker {
     const timestamp = Date.now();
 
     // Sample points within the FOV cone
-    const samples = 16; // Number of samples in each direction
+    const samples = 10; // Number of samples in each direction
     for (let i = 0; i < samples; i++) {
       for (let j = 0; j < samples; j++) {
         // Create a grid within the FOV cone

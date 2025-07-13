@@ -9,6 +9,7 @@ import AccelerometerOverlay from '../components/AccelerometerOverlay';
 import ProgressRing from '../components/ProgressRing';
 import { OrientationTracker, Orientation } from '../utils/orientationTracker';
 import { ScanTracker, ScanCoverage } from '../utils/scanTracker';
+import { ActivityIndicator } from 'react-native';
 
 interface CameraScreenProps {
   navigation: any;
@@ -124,13 +125,20 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
       
       {/* Show either AccelerometerOverlay or SkyDome3D based on scanning state */}
       {!isScanning ? (
-        <AccelerometerOverlay onScanStart={handleScanStart} />
+      <AccelerometerOverlay onScanStart={handleScanStart} />
       ) : (
-        <SkyDome3D 
-          orientation={orientation} 
-          initialOrientation={initialOrientation}
-          onLoaded={handleSkyDomeLoaded}
-        />
+        <>
+          {!isSkyDomeLoaded && (
+            <View style={styles.loaderContainer}>
+              <ActivityIndicator size="large" color="#ffffff" />
+            </View>
+          )}
+          <SkyDome3D
+            orientation={orientation}
+            initialOrientation={initialOrientation}
+            onLoaded={handleSkyDomeLoaded}
+          />
+        </>
       )}
       
       <View style={styles.header}>
@@ -160,7 +168,7 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
       </View>
 
       {/* Reset button - also stops scanning when pressed */}
-      <TouchableOpacity 
+      {/* <TouchableOpacity 
         style={styles.resetButton} 
         onPress={() => {
           orientationTracker.current?.reset();
@@ -169,10 +177,10 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
         }}
       >
         <Text style={styles.resetButtonText}>Reset Gyroscope (debug only)</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       {/* Stop scanning button - only shows when scanning */}
-      {isScanning && (
+      {isScanning && isSkyDomeLoaded && (
         <TouchableOpacity
           style={styles.stopScanButton}
           onPress={handleScanStop}
@@ -248,14 +256,20 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   stopScanButtonText: {
-    backgroundColor: 'rgba(255, 0, 0, 0.8)',
-    color: 'white',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)', // Black transparent background
+    borderColor: '#ff0000', // Red border
+    borderWidth: 3, // Border width
+    shadowColor: '#ff0000', // Red glow
+    shadowOpacity: 0.8, // Glow opacity
+    shadowRadius: 20, // Glow radius
+    elevation: 20, // For Android shadow
+    color: 'white', // White text
     fontSize: 16,
     fontWeight: 'bold',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 20,
-    textAlign: 'center',
+    textAlign: 'center', // Center text
   },
   permissionText: {
     textAlign: 'center',
@@ -272,5 +286,12 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  loaderContainer: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -25 }, { translateY: -25 }], // Center the loader
+    zIndex: 3,
   },
 });

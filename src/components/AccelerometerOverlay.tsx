@@ -201,7 +201,13 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   scanButton: {
-    backgroundColor: 'rgba(0, 255, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)', // Black transparent background
+    borderColor: '#00ff00', // Green border
+    borderWidth: 3, // Border width
+    shadowColor: '#00ff00', // Green glow
+    shadowOpacity: 0.8, // Glow opacity
+    shadowRadius: 20, // Glow radius
+    elevation: 20, // For Android shadow
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 20,

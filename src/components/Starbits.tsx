@@ -30,13 +30,13 @@ export function Starbits({}: StarbitsProps) {
     
     const geometry = new THREE.ShapeGeometry(starShape);
     
-    // Use standard material with emissive properties for sparkle
+    // Simplified material with consistent blue color
     const material = new THREE.MeshBasicMaterial({
-      color: 0x4488ff,
+      color: 0x8ade81, // Consistent blue color
       transparent: true,
       opacity: 0.8,
       side: THREE.DoubleSide,
-      blending: THREE.AdditiveBlending, // Makes stars glow
+      blending: THREE.AdditiveBlending, // Keep glow effect
     });
 
     // Calculate star count based on area
@@ -46,7 +46,7 @@ export function Starbits({}: StarbitsProps) {
 
     const instancedMesh = new THREE.InstancedMesh(geometry, material, starbitCount);
 
-    // Store initial scales and phases for animation
+    // Store only initial scales and phases for pulsating animation
     const initialScales = new Float32Array(starbitCount);
     const animationPhases = new Float32Array(starbitCount);
     
@@ -121,12 +121,12 @@ export function Starbits({}: StarbitsProps) {
 
     instancedMesh.instanceMatrix.needsUpdate = true;
     
-    // Store animation data on the mesh for later use
+    // Store only necessary animation data
     instancedMesh.userData.initialScales = initialScales;
     instancedMesh.userData.animationPhases = animationPhases;
     instancedMesh.userData.starPositions = [];
     
-    // Store positions for animation
+    // Store positions for animation (simplified)
     for (let i = 0; i < starPositions.length; i++) {
       const matrix = new THREE.Matrix4();
       instancedMesh.getMatrixAt(i, matrix);
@@ -143,7 +143,7 @@ export function Starbits({}: StarbitsProps) {
   // Create starbits once and store reference
   const starbits = useMemo(() => createStarbits(), []);
 
-  // Animation loop for sparkle effect
+  // Simplified animation loop - only pulsating scale
   useFrame((state) => {
     timeRef.current = state.clock.elapsedTime;
     
@@ -151,17 +151,14 @@ export function Starbits({}: StarbitsProps) {
       const dummy = new THREE.Object3D();
       const { initialScales, animationPhases, starPositions } = starbits.userData;
       
-      // Update each star's scale and opacity for sparkle effect
+      // Update each star's scale for pulsating effect only
       for (let i = 0; i < starPositions.length; i++) {
         const { position, rotation } = starPositions[i];
         const phase = animationPhases[i];
         const baseScale = initialScales[i];
         
-        // Calculate pulsing scale
+        // Calculate pulsing scale (simplified)
         const pulseScale = baseScale * (0.8 + 0.4 * Math.sin(timeRef.current * 3 + phase));
-        
-        // Calculate sparkle opacity
-        const sparkleOpacity = 0.6 + 0.4 * Math.sin(timeRef.current * 6 + phase * 2);
         
         dummy.position.copy(position);
         dummy.quaternion.copy(rotation);
@@ -172,11 +169,6 @@ export function Starbits({}: StarbitsProps) {
       }
       
       starbits.instanceMatrix.needsUpdate = true;
-      
-      // Update material opacity for sparkle effect
-      if (starbits.material) {
-        starbits.material.opacity = 0.7 + 0.3 * Math.sin(timeRef.current * 4);
-      }
     }
   });
 
