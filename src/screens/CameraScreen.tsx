@@ -21,6 +21,7 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
   const [compassHeading, setCompassHeading] = useState(0);
   const [isPointingUp, setIsPointingUp] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [isSkyDomeLoaded, setIsSkyDomeLoaded] = useState(false);
   const [scanCoverage, setScanCoverage] = useState<ScanCoverage>({ totalCoverage: 0, scannedPoints: [] });
   
   const orientationTracker = useRef<OrientationTracker | null>(null);
@@ -41,11 +42,11 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
     const pointingUp = calculatePointingUp(newOrientation);
     setIsPointingUp(pointingUp);
 
-    // Update scan tracking if scanning is active
-    if (isScanning && scanTracker.current) {
+    // Only update scan tracking if scanning is active AND sky dome is loaded
+    if (isScanning && isSkyDomeLoaded && scanTracker.current) {
       scanTracker.current.updateOrientation(newOrientation);
     }
-  }, [calculatePointingUp, isScanning]);
+  }, [calculatePointingUp, isScanning, isSkyDomeLoaded]);
 
   const handleScanCoverageChange = useCallback((coverage: ScanCoverage) => {
     setScanCoverage(coverage);
@@ -53,6 +54,10 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
 
   const handleHeadingChange = useCallback((heading: number) => {
     setCompassHeading(heading);
+  }, []);
+
+  const handleSkyDomeLoaded = useCallback(() => {
+    setIsSkyDomeLoaded(true);
   }, []);
 
   const handleScanStart = useCallback(() => {
@@ -65,12 +70,16 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
     // Reset scan tracker
     scanTracker.current?.reset();
     
+    // Reset sky dome loaded state
+    setIsSkyDomeLoaded(false);
+    
     // Start scanning
     setIsScanning(true);
   }, []);
 
   const handleScanStop = useCallback(() => {
     setIsScanning(false);
+    setIsSkyDomeLoaded(false);
   }, []);
 
   useEffect(() => {
@@ -120,6 +129,7 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
         <SkyDome3D 
           orientation={orientation} 
           initialOrientation={initialOrientation}
+          onLoaded={handleSkyDomeLoaded}
         />
       )}
       
@@ -132,8 +142,8 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
         </TouchableOpacity>
       </View>
       
-      {/* Progress Ring - only show when scanning */}
-      {isScanning && (
+      {/* Progress Ring - only show when scanning AND sky dome is loaded */}
+      {isScanning && isSkyDomeLoaded && (
         <View style={styles.progressRingContainer}>
           <ProgressRing progress={scanCoverage.totalCoverage} size={100} strokeWidth={8} />
         </View>

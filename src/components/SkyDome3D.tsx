@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Canvas, useFrame, useThree } from '@react-three/fiber/native';
 import * as THREE from 'three';
@@ -8,10 +8,12 @@ import { Starbits } from './Starbits';
 interface SkyDome3DProps {
   orientation: Orientation;
   initialOrientation: Orientation;
+  onLoaded?: () => void;
 }
 
-function SkyDome({ initialOrientation }: { initialOrientation: Orientation }) {
+function SkyDome({ initialOrientation, onLoaded }: { initialOrientation: Orientation; onLoaded?: () => void }) {
   const groupRef = useRef<THREE.Group>(null);
+  const [isLoaded, setIsLoaded] = React.useState(false);
 
   // Since initialOrientation is now always zero (reset when scan starts),
   // we don't need to rotate the dome at all. The white part will always be
@@ -93,6 +95,17 @@ function SkyDome({ initialOrientation }: { initialOrientation: Orientation }) {
     return lines;
   };
 
+  // Signal that the dome is loaded after component mounts
+  useEffect(() => {
+    // Use a small delay to ensure Three.js objects are fully initialized
+    const timer = setTimeout(() => {
+      setIsLoaded(true);
+      onLoaded?.();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [onLoaded]);
+
   return (
     <group ref={groupRef} rotation={[domeRotation.x, domeRotation.y, domeRotation.z]}>
       {/* Top section (black - most of the sphere) */}
@@ -128,7 +141,7 @@ function CameraController({ orientation, initialOrientation }: { orientation: Or
   return null;
 }
 
-export default function SkyDome3D({ orientation, initialOrientation }: SkyDome3DProps) {
+export default function SkyDome3D({ orientation, initialOrientation, onLoaded }: SkyDome3DProps) {
   return (
     <View style={styles.container} pointerEvents="none">
       <Canvas
@@ -140,7 +153,7 @@ export default function SkyDome3D({ orientation, initialOrientation }: SkyDome3D
         }}
       >
         <CameraController orientation={orientation} initialOrientation={initialOrientation} />
-        <SkyDome initialOrientation={initialOrientation} />
+        <SkyDome initialOrientation={initialOrientation} onLoaded={onLoaded} />
       </Canvas>
     </View>
   );
