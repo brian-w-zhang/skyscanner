@@ -154,8 +154,9 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
       console.log('✅ Rotation data recording stopped. Data points:', rotationData.length);
       
       if (rotationData.length > 0) {
-        console.log('📊 Final rotation data (first 3 points):', rotationData.slice(0, 3));
-        console.log('📊 Final rotation data (last 3 points):', rotationData.slice(-3));
+        // console.log('📊 Final rotation data (first 3 points):', rotationData.slice(0, 3));
+        // console.log('📊 Final rotation data (last 3 points):', rotationData.slice(-3));
+        console.log('📊 Full rotation data JSON:', JSON.stringify(rotationData, null, 2));
       }
     } else {
       console.log('❌ rotationRecorder.current is null when stopping');
@@ -182,7 +183,7 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
 
   // Initialize rotation recorder ONCE - no dependencies
   useEffect(() => {
-    rotationRecorder.current = new RotationDataRecorder(1000);
+    rotationRecorder.current = new RotationDataRecorder(300);
     
     return () => {
       if (rotationRecorder.current) {

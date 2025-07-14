@@ -17,7 +17,7 @@ export class RotationDataRecorder {
   private recordingInterval: number;
   private recordingStartTime: number = 0;
 
-  constructor(intervalMs: number = 1000) {
+  constructor(intervalMs: number = 300) {
     this.recordingInterval = intervalMs;
   }
 
