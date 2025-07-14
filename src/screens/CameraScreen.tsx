@@ -3,7 +3,6 @@ import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import Compass from '../components/Compass';
-import OrientationDebugNew from '../components/OrientationDebugNew';
 import SkyDome3D from '../components/SkyDome3D';
 import AccelerometerOverlay from '../components/AccelerometerOverlay';
 import ProgressRing from '../components/ProgressRing';
@@ -20,34 +19,24 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
   const [orientation, setOrientation] = useState<Orientation>({ pitch: 0, yaw: 0, roll: 0 });
   const [initialOrientation, setInitialOrientation] = useState<Orientation>({ pitch: 0, yaw: 0, roll: 0 });
   const [compassHeading, setCompassHeading] = useState(0);
-  const [isPointingUp, setIsPointingUp] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [isSkyDomeLoaded, setIsSkyDomeLoaded] = useState(false);
   const [scanCoverage, setScanCoverage] = useState<ScanCoverage>({ totalCoverage: 0, scannedPoints: [] });
+  const [isRecording, setIsRecording] = useState(false);
   
   const orientationTracker = useRef<OrientationTracker | null>(null);
   const scanTracker = useRef<ScanTracker | null>(null);
-
-  // Calculate if pointing up based on pitch
-  const calculatePointingUp = useCallback((orientation: Orientation) => {
-    const pitchDegrees = orientation.pitch * (180 / Math.PI);
-    
-    // Consider "pointing up" when pitch is negative (phone tilted up)
-    // and within reasonable bounds
-    return pitchDegrees < -20 && pitchDegrees > -90;
-  }, []);
+  const cameraRef = useRef<CameraView>(null);
+  const recordingRef = useRef<any>(null);
 
   const handleOrientationChange = useCallback((newOrientation: Orientation) => {
     setOrientation(newOrientation);
-    
-    const pointingUp = calculatePointingUp(newOrientation);
-    setIsPointingUp(pointingUp);
 
     // Only update scan tracking if scanning is active AND sky dome is loaded
     if (isScanning && isSkyDomeLoaded && scanTracker.current) {
       scanTracker.current.updateOrientation(newOrientation);
     }
-  }, [calculatePointingUp, isScanning, isSkyDomeLoaded]);
+  }, [isScanning, isSkyDomeLoaded]);
 
   const handleScanCoverageChange = useCallback((coverage: ScanCoverage) => {
     setScanCoverage(coverage);
@@ -61,7 +50,42 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
     setIsSkyDomeLoaded(true);
   }, []);
 
-  const handleScanStart = useCallback(() => {
+  const startVideoRecording = useCallback(async () => {
+    if (cameraRef.current && !isRecording) {
+      try {
+        setIsRecording(true);
+        const video = await cameraRef.current.recordAsync({
+          maxDuration: 300, // 5 minutes max
+        });
+        recordingRef.current = video;
+      } catch (error) {
+        console.error('Error starting video recording:', error);
+        setIsRecording(false);
+      }
+    }
+  }, [isRecording]);
+
+  const stopVideoRecording = useCallback(async () => {
+    if (cameraRef.current && isRecording) {
+      try {
+        cameraRef.current.stopRecording();
+        setIsRecording(false);
+        
+        // Wait a moment for the recording to finish processing
+        setTimeout(() => {
+          if (recordingRef.current) {
+            // Navigate to Gallery screen with the video URI
+            navigation.replace('GalleryScreen', { videoUri: recordingRef.current.uri });
+          }
+        }, 500);
+      } catch (error) {
+        console.error('Error stopping video recording:', error);
+        setIsRecording(false);
+      }
+    }
+  }, [isRecording, navigation]);
+
+  const handleScanStart = useCallback(async () => {
     // Reset the orientation tracker first to zero out any accumulated values
     orientationTracker.current?.reset();
     
@@ -76,12 +100,18 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
     
     // Start scanning
     setIsScanning(true);
-  }, []);
+    
+    // Start video recording
+    await startVideoRecording();
+  }, [startVideoRecording]);
 
-  const handleScanStop = useCallback(() => {
+  const handleScanStop = useCallback(async () => {
     setIsScanning(false);
     setIsSkyDomeLoaded(false);
-  }, []);
+    
+    // Stop video recording
+    await stopVideoRecording();
+  }, [stopVideoRecording]);
 
   useEffect(() => {
     // Initialize orientation tracker
@@ -119,7 +149,12 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
 
   return (
     <View style={styles.cameraContainer}>
-      <CameraView style={styles.camera} facing="back" />
+      <CameraView 
+        ref={cameraRef}
+        style={styles.camera} 
+        facing="back" 
+        mode="video"
+      />
       
       {/* All overlays moved outside CameraView with absolute positioning */}
       
@@ -148,6 +183,14 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
         >
           <Ionicons name="chevron-back" size={24} color="white" />
         </TouchableOpacity>
+        
+        {/* Recording indicator */}
+        {isRecording && (
+          <View style={styles.recordingIndicator}>
+            <View style={styles.recordingDot} />
+            <Text style={styles.recordingText}>REC</Text>
+          </View>
+        )}
       </View>
       
       {/* Progress Ring - only show when scanning AND sky dome is loaded */}
@@ -157,27 +200,9 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
         </View>
       )}
       
-      {/* New Orientation Debug */}
-      {/* <OrientationDebugNew 
-        orientation={orientation}
-        isPointingUp={isPointingUp}
-      /> */}
-      
       <View style={styles.compassContainer}>
         <Compass onHeadingChange={handleHeadingChange} />
       </View>
-
-      {/* Reset button - also stops scanning when pressed */}
-      {/* <TouchableOpacity 
-        style={styles.resetButton} 
-        onPress={() => {
-          orientationTracker.current?.reset();
-          scanTracker.current?.reset();
-          handleScanStop();
-        }}
-      >
-        <Text style={styles.resetButtonText}>Reset Gyroscope (debug only)</Text>
-      </TouchableOpacity> */}
 
       {/* Stop scanning button - only shows when scanning */}
       {isScanning && isSkyDomeLoaded && (
@@ -212,12 +237,36 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 60,
     left: 20,
+    right: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     zIndex: 2,
   },
   backButton: {
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     borderRadius: 20,
     padding: 8,
+  },
+  recordingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+  },
+  recordingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ff0000',
+    marginRight: 6,
+  },
+  recordingText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   progressRingContainer: {
     position: 'absolute',
