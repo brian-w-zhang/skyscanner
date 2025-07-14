@@ -8,6 +8,7 @@ import AccelerometerOverlay from '../components/AccelerometerOverlay';
 import ProgressRing from '../components/ProgressRing';
 import { OrientationTracker, Orientation } from '../utils/orientationTracker';
 import { ScanTracker, ScanCoverage } from '../utils/scanTracker';
+import { RotationDataRecorder, RotationData } from '../utils/RotationDataRecorder';
 import { ActivityIndicator } from 'react-native';
 
 interface CameraScreenProps {
@@ -26,8 +27,13 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
   
   const orientationTracker = useRef<OrientationTracker | null>(null);
   const scanTracker = useRef<ScanTracker | null>(null);
+  const rotationRecorder = useRef<RotationDataRecorder | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const recordingRef = useRef<any>(null);
+
+  // Create stable refs for callbacks with proper initial values
+  const handleOrientationChangeRef = useRef<(orientation: Orientation) => void>(() => {});
+  const handleScanCoverageChangeRef = useRef<(coverage: ScanCoverage) => void>(() => {});
 
   const handleOrientationChange = useCallback((newOrientation: Orientation) => {
     setOrientation(newOrientation);
@@ -54,6 +60,21 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
     if (cameraRef.current && !isRecording) {
       try {
         setIsRecording(true);
+        
+        // Start rotation data recording at the same time as video recording
+        if (rotationRecorder.current) {
+          try {
+            console.log('📱 Starting rotation data recording...');
+            await rotationRecorder.current.startRecording();
+            console.log('✅ Rotation data recording started successfully');
+          } catch (error) {
+            console.error('❌ Failed to start rotation data recording:', error);
+          }
+        } else {
+          console.error('❌ rotationRecorder.current is null');
+        }
+        
+        // Start video recording
         const video = await cameraRef.current.recordAsync({
           maxDuration: 300, // 5 minutes max
         });
@@ -61,6 +82,11 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
       } catch (error) {
         console.error('Error starting video recording:', error);
         setIsRecording(false);
+        
+        // Stop rotation recording if video recording failed
+        if (rotationRecorder.current) {
+          rotationRecorder.current.stopRecording();
+        }
       }
     }
   }, [isRecording]);
@@ -69,13 +95,15 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
     if (cameraRef.current && isRecording) {
       try {
         cameraRef.current.stopRecording();
-        setIsRecording(false);
+        setIsRecording(false); // This should ONLY affect video recording state
         
         // Wait a moment for the recording to finish processing
         setTimeout(() => {
           if (recordingRef.current) {
             // Navigate to Gallery screen with the video URI
-            navigation.replace('GalleryScreen', { videoUri: recordingRef.current.uri });
+            navigation.replace('GalleryScreen', { 
+              videoUri: recordingRef.current.uri
+            });
           }
         }, 500);
       } catch (error) {
@@ -101,30 +129,86 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
     // Start scanning
     setIsScanning(true);
     
-    // Start video recording
+    // Start video recording (which will also start rotation recording)
     await startVideoRecording();
   }, [startVideoRecording]);
 
   const handleScanStop = useCallback(async () => {
+    // Prevent multiple calls
+    if (!isScanning) {
+      console.log('⚠️ handleScanStop called but not scanning, ignoring...');
+      return;
+    }
+
+    console.log('🛑 handleScanStop starting...');
+    
+    // Stop rotation data recording FIRST, before changing any state
+    let rotationData: RotationData[] = [];
+    console.log('Stopping rotation data recording...');
+    
+    if (rotationRecorder.current) {
+      console.log('📊 Recorder isCurrentlyRecording:', rotationRecorder.current.isCurrentlyRecording());
+      
+      // Always try to stop, regardless of the state check
+      rotationData = rotationRecorder.current.stopRecording();
+      console.log('✅ Rotation data recording stopped. Data points:', rotationData.length);
+      
+      if (rotationData.length > 0) {
+        console.log('📊 Final rotation data (first 3 points):', rotationData.slice(0, 3));
+        console.log('📊 Final rotation data (last 3 points):', rotationData.slice(-3));
+      }
+    } else {
+      console.log('❌ rotationRecorder.current is null when stopping');
+    }
+    
+    // NOW update the React state after stopping the recorder
     setIsScanning(false);
     setIsSkyDomeLoaded(false);
     
     // Stop video recording
     await stopVideoRecording();
-  }, [stopVideoRecording]);
+    
+    console.log('🛑 handleScanStop completed');
+  }, [isScanning, stopVideoRecording]);
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    handleOrientationChangeRef.current = handleOrientationChange;
+  }, [handleOrientationChange]);
 
   useEffect(() => {
-    // Initialize orientation tracker
-    orientationTracker.current = new OrientationTracker(handleOrientationChange);
-    orientationTracker.current.start();
+    handleScanCoverageChangeRef.current = handleScanCoverageChange;
+  }, [handleScanCoverageChange]);
 
-    // Initialize scan tracker
-    scanTracker.current = new ScanTracker(handleScanCoverageChange);
+  // Initialize rotation recorder ONCE - no dependencies
+  useEffect(() => {
+    rotationRecorder.current = new RotationDataRecorder(1000);
+    
+    return () => {
+      if (rotationRecorder.current) {
+        rotationRecorder.current.destroy();
+      }
+    };
+  }, []);
+
+  // Initialize orientation tracker with stable callback - runs once
+  useEffect(() => {
+    orientationTracker.current = new OrientationTracker((orientation) => {
+      handleOrientationChangeRef.current(orientation);
+    });
+    orientationTracker.current.start();
 
     return () => {
       orientationTracker.current?.stop();
     };
-  }, [handleOrientationChange, handleScanCoverageChange]);
+  }, []); // Only run once since we use ref
+
+  // Initialize scan tracker with stable callback - runs once
+  useEffect(() => {
+    scanTracker.current = new ScanTracker((coverage) => {
+      handleScanCoverageChangeRef.current(coverage);
+    });
+  }, []); // Only run once since we use ref
 
   if (!permission) {
     return (
@@ -220,18 +304,18 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgb(23, 23, 23)', // Changed from white to grey
+    backgroundColor: 'rgb(23, 23, 23)',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
   cameraContainer: {
     flex: 1,
-    backgroundColor: 'rgba(23, 23, 23, 0.8)', // Add grey background here too
+    backgroundColor: 'rgba(23, 23, 23, 0.8)',
   },
   camera: {
     flex: 1,
-    backgroundColor: 'rgba(23, 23, 23, 0.8)', // Add grey background to camera view
+    backgroundColor: 'rgba(23, 23, 23, 0.8)',
   },
   header: {
     position: 'absolute',
@@ -305,20 +389,20 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   stopScanButtonText: {
-    backgroundColor: 'rgba(0, 0, 0, 0.7)', // Black transparent background
-    borderColor: '#ff0000', // Red border
-    borderWidth: 3, // Border width
-    shadowColor: '#ff0000', // Red glow
-    shadowOpacity: 0.8, // Glow opacity
-    shadowRadius: 20, // Glow radius
-    elevation: 20, // For Android shadow
-    color: 'white', // White text
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderColor: '#ff0000',
+    borderWidth: 3,
+    shadowColor: '#ff0000',
+    shadowOpacity: 0.8,
+    shadowRadius: 20,
+    elevation: 20,
+    color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 20,
-    textAlign: 'center', // Center text
+    textAlign: 'center',
   },
   permissionText: {
     textAlign: 'center',
@@ -340,7 +424,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '50%',
     left: '50%',
-    transform: [{ translateX: -25 }, { translateY: -25 }], // Center the loader
+    transform: [{ translateX: -25 }, { translateY: -25 }],
     zIndex: 3,
   },
 });
