@@ -1,8 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video'; // Use expo-video
 import { Ionicons } from '@expo/vector-icons';
-import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 
 interface GalleryScreenProps {
@@ -16,42 +15,39 @@ interface GalleryScreenProps {
 
 export default function GalleryScreen({ navigation, route }: GalleryScreenProps) {
   const { videoUri } = route.params;
-  const [status, setStatus] = useState<any>({});
+
+  // Initialize the video player
+  const player = useVideoPlayer(videoUri, (player) => {
+    player.loop = false; // Disable looping
+  });
+
   const [isPlaying, setIsPlaying] = useState(false);
-  const videoRef = useRef<Video>(null);
 
   const handlePlayPause = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pauseAsync();
-      } else {
-        videoRef.current.playAsync();
-      }
-      setIsPlaying(!isPlaying);
+    if (isPlaying) {
+      player.pause();
+    } else {
+      player.play();
     }
+    setIsPlaying(!isPlaying);
   };
 
   const handleReplay = () => {
-    if (videoRef.current) {
-      videoRef.current.replayAsync();
-      setIsPlaying(true);
-    }
+    player.replay();
+    setIsPlaying(true);
   };
 
   const handleSaveToGallery = async () => {
     try {
-      // Request permission to access media library
       const { status } = await MediaLibrary.requestPermissionsAsync();
-      
       if (status !== 'granted') {
         Alert.alert('Permission Required', 'Permission to access media library is required to save the video.');
         return;
       }
 
-      // Save the video to the device's media library
       const asset = await MediaLibrary.createAssetAsync(videoUri);
       await MediaLibrary.createAlbumAsync('Sky Scanner', asset, false);
-      
+
       Alert.alert('Success', 'Video saved to your gallery!');
     } catch (error) {
       console.error('Error saving video:', error);
@@ -70,78 +66,41 @@ export default function GalleryScreen({ navigation, route }: GalleryScreenProps)
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={handleGoHome}
-        >
+        <TouchableOpacity style={styles.headerButton} onPress={handleGoHome}>
           <Ionicons name="home" size={24} color="white" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Sky Scan Recording</Text>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={handleSaveToGallery}
-        >
+        <TouchableOpacity style={styles.headerButton} onPress={handleSaveToGallery}>
           <Ionicons name="download" size={24} color="white" />
         </TouchableOpacity>
       </View>
 
       <View style={styles.videoContainer}>
-        <Video
-          ref={videoRef}
+        <VideoView
+          player={player}
           style={styles.video}
-          source={{ uri: videoUri }}
-          useNativeControls={false}
-          resizeMode={ResizeMode.CONTAIN}
-          isLooping={false}
-          onPlaybackStatusUpdate={(status) => {
-            setStatus(status);
-            if (status.isLoaded) {
-              setIsPlaying(status.isPlaying || false);
-            }
-          }}
+          allowsFullscreen
+          nativeControls={false}
+          contentFit="contain"
         />
-        
-        {/* Video overlay controls */}
+
         <View style={styles.videoOverlay}>
-          <TouchableOpacity
-            style={styles.playButton}
-            onPress={handlePlayPause}
-          >
-            <Ionicons 
-              name={isPlaying ? "pause" : "play"} 
-              size={48} 
-              color="white" 
-            />
+          <TouchableOpacity style={styles.playButton} onPress={handlePlayPause}>
+            <Ionicons name={isPlaying ? 'pause' : 'play'} size={48} color="white" />
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.controls}>
-        <TouchableOpacity
-          style={styles.controlButton}
-          onPress={handleReplay}
-        >
+        <TouchableOpacity style={styles.controlButton} onPress={handleReplay}>
           <Ionicons name="refresh" size={24} color="white" />
           <Text style={styles.controlButtonText}>Replay</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={styles.controlButton}
-          onPress={handleReturnToCamera}
-        >
+
+        <TouchableOpacity style={styles.controlButton} onPress={handleReturnToCamera}>
           <Ionicons name="camera" size={24} color="white" />
           <Text style={styles.controlButtonText}>New Scan</Text>
         </TouchableOpacity>
-      </View>
-
-      {/* Video info */}
-      <View style={styles.infoContainer}>
-        <Text style={styles.infoText}>
-          Duration: {status.isLoaded ? Math.round(status.durationMillis / 1000) : 0}s
-        </Text>
-        <Text style={styles.infoText}>
-          Position: {status.isLoaded ? Math.round(status.positionMillis / 1000) : 0}s
-        </Text>
       </View>
     </SafeAreaView>
   );
@@ -214,17 +173,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginTop: 4,
-  },
-  infoContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-  },
-  infoText: {
-    color: 'white',
-    fontSize: 12,
-    opacity: 0.8,
   },
 });
