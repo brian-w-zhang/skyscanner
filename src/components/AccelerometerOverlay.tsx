@@ -54,7 +54,7 @@ export default function AccelerometerOverlay({ onScanStart }: AccelerometerOverl
     let status: 'perfect' | 'close' | 'adjust';
 
     if (pitchDegrees <= GREEN_THRESHOLD && rollDegrees <= GREEN_THRESHOLD) {
-      color = '#00D4FF'; // SpaceX blue instead of green
+      color = '#18d127ff'; // SpaceX blue instead of green
       opacity = 0.9;
       message = 'READY FOR SKY SCAN';
       status = 'perfect';

@@ -30,9 +30,9 @@ export function Starbits({}: StarbitsProps) {
     
     const geometry = new THREE.ShapeGeometry(starShape);
     
-    // Simplified material with consistent blue color
+    // Simplified material with consistent green color
     const material = new THREE.MeshBasicMaterial({
-      color: 0x8ade81, // Consistent blue color
+      color: 0x4fc961, // pale green
       transparent: true,
       opacity: 0.8,
       side: THREE.DoubleSide,

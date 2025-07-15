@@ -371,7 +371,7 @@ export default function CameraScreen2({ navigation }: CameraScreen2Props) {
           style={styles.stopScanButton}
           onPress={handleScanStop}
         >
-          <Text style={styles.stopScanButtonText}>Stop Scan</Text>
+          <Text style={styles.stopScanButtonText}>STOP SCAN</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -438,26 +438,21 @@ const styles = StyleSheet.create({
   },
   stopScanButton: {
     position: 'absolute',
-    bottom: 270,
+    bottom: 310,
     left: 0,
     right: 0,
     alignItems: 'center',
     zIndex: 3,
   },
   stopScanButtonText: {
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderColor: '#ff0000',
-    borderWidth: 3,
-    shadowColor: '#ff0000',
-    shadowOpacity: 0.8,
-    shadowRadius: 20,
-    elevation: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    paddingHorizontal: 24,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 20,
+    borderRadius: 8,
     textAlign: 'center',
   },
   permissionText: {
