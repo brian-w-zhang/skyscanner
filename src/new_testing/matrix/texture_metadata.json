@@ -17,5 +17,8 @@
     "blue": "sky",
     "gray": "unsampled"
   },
+  "alpha_channel": {
+    "128": "50% transparency (consistent across all colors)"
+  },
   "usage": "Use as data texture in Three.js for dome visualization"
 }

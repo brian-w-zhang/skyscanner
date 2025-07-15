@@ -326,17 +326,17 @@ class ObstructionMapper:
                 
                 vertices.append([x, y, z])
                 
-                # Color based on sky classification
+                # Color based on sky classification - ALL WITH 50% TRANSPARENCY
                 is_sky = self.sky_grid[i, j]
                 sample_count = self.sample_counts[i, j]
                 
                 if sample_count > 0:  # Sampled area
                     if is_sky:  # Sky
-                        colors.append([0, 0, 255, 200])  # Blue, semi-transparent
+                        colors.append([0, 0, 255, 128])  # Blue, 50% transparent
                     else:  # Not sky
-                        colors.append([255, 0, 0, 255])  # Red, opaque
+                        colors.append([255, 0, 0, 128])  # Red, 50% transparent
                 else:  # Unsampled
-                    colors.append([128, 128, 128, 100])  # Gray, very transparent
+                    colors.append([128, 128, 128, 128])  # Gray, 50% transparent
         
         # Generate faces (triangles)
         for i in range(self.theta_steps - 1):
@@ -362,21 +362,21 @@ class ObstructionMapper:
         output_path = os.path.join(output_dir, "dome_sky_model.ply")
         mesh.export(output_path)
         
-        print(f"🎨 3D dome model saved: {output_path}")
+        print(f"🎨 3D dome model saved: {output_path} (all colors with 50% transparency)")
         return output_path
 
     def create_data_texture(self, output_dir: str) -> str:
         """
         Create a data texture image for Three.js.
-        Red = not sky, Blue = sky
+        Red = not sky, Blue = sky, with 50% transparency.
         
         Returns:
             Path to saved texture file
         """
         os.makedirs(output_dir, exist_ok=True)
         
-        # Create RGB image from sky grid
-        texture_data = np.zeros((self.theta_steps, self.phi_steps, 3), dtype=np.uint8)
+        # Create RGBA image from sky grid
+        texture_data = np.zeros((self.theta_steps, self.phi_steps, 4), dtype=np.uint8)
         
         for i in range(self.theta_steps):
             for j in range(self.phi_steps):
@@ -385,18 +385,18 @@ class ObstructionMapper:
                 if sample_count > 0:  # Sampled area
                     is_sky = self.sky_grid[i, j]
                     if is_sky:  # Sky
-                        texture_data[i, j] = [0, 0, 255]  # Blue
+                        texture_data[i, j] = [0, 0, 255, 128]  # Blue with 50% transparency
                     else:  # Not sky
-                        texture_data[i, j] = [255, 0, 0]  # Red
+                        texture_data[i, j] = [255, 0, 0, 128]  # Red with 50% transparency
                 else:  # Unsampled
-                    texture_data[i, j] = [128, 128, 128]  # Gray
-        
+                    texture_data[i, j] = [128, 128, 128, 128]  # Gray with 50% transparency
+
         # Save as PNG
         output_path = os.path.join(output_dir, "dome_sky_texture.png")
-        image = Image.fromarray(texture_data, 'RGB')
+        image = Image.fromarray(texture_data, 'RGBA')
         image.save(output_path)
         
-        print(f"🖼️  Data texture saved: {output_path}")
+        print(f"🖼️  Data texture saved: {output_path} (50% transparency)")
         
         # Also save metadata for the texture
         texture_metadata = {
@@ -408,6 +408,9 @@ class ObstructionMapper:
                 "red": "not sky or obstruction",
                 "blue": "sky",
                 "gray": "unsampled"
+            },
+            "alpha_channel": {
+                "128": "50% transparency (consistent across all colors)"
             },
             "usage": "Use as data texture in Three.js for dome visualization"
         }
