@@ -4,9 +4,10 @@ from matplotlib import pyplot as plt
 import os
 
 def load_image(image_path):
+    """Load image from path."""
     image = cv2.imread(image_path)
     if image is None:
-        print(f"Error: Unable to load image at {image_path}")
+        print(f"❌ Error: Unable to load image at {image_path}")
         return None
     return image
 
@@ -26,6 +27,7 @@ def filter_sky_contours(mask, image_height, min_area=8000, max_area=None, height
     """
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     sky_mask = np.zeros_like(mask)
+    
     for contour in contours:
         area = cv2.contourArea(contour)
         x, y, w, h = cv2.boundingRect(contour)
@@ -35,14 +37,16 @@ def filter_sky_contours(mask, image_height, min_area=8000, max_area=None, height
         if convex_hull_area > 0:  # Ensure the denominator is not zero
             smoothness = area / convex_hull_area
         else:
-            smoothness = 1  # Or some other default value that makes sense for your application
+            smoothness = 1  # Default value
 
         if (area > min_area) and (max_area is None or area < max_area) and (y < image_height * height_ratio):
             if aspect_ratio > 1 and smoothness > 0.5:  # Adjust thresholds as necessary
                 cv2.drawContours(sky_mask, [contour], -1, (255), thickness=cv2.FILLED)
+    
     return sky_mask
 
 def detect_edges(image):
+    """Detect edges in the image using Sobel filters."""
     # Convert to grayscale
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     
@@ -60,7 +64,7 @@ def detect_edges(image):
     # Apply thresholding to get binary result
     _, edge_binary = cv2.threshold(gradient_magnitude, 20, 255, cv2.THRESH_BINARY)
     
-    # Optionally, you can apply dilation followed by erosion to close gaps
+    # Optionally, apply dilation followed by erosion to close gaps
     kernel = np.ones((3,3), np.uint8)
     edge_dilated = cv2.dilate(edge_binary, kernel, iterations=1)
     edge_processed = cv2.erode(edge_dilated, kernel, iterations=1)
@@ -68,15 +72,24 @@ def detect_edges(image):
     return edge_processed
 
 def adaptive_threshold_sky(image):
+    """Apply adaptive thresholding for sky detection."""
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     return cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                 cv2.THRESH_BINARY,21,2)
+                                 cv2.THRESH_BINARY, 21, 2)
 
 def refine_mask(mask):
+    """Refine mask using morphological operations."""
     kernel = np.ones((35,35), np.uint8)
     return cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
 
 def segment_sky(image):
+    """
+    Segment sky regions from the image.
+    
+    Returns:
+    - segmented_sky: Image with sky regions extracted
+    - contours: Sky contours found
+    """
     # Detect edges.
     edges = detect_edges(image)
 
@@ -92,12 +105,13 @@ def segment_sky(image):
     # Filter contours that are likely to be the sky and refine the mask.
     refined_mask_contour = filter_sky_contours(combined_mask, image.shape[0])
 
-    # Optionally, you can further refine the mask with morphological operations if needed.
+    # Optionally, further refine the mask with morphological operations.
     refined_mask_morph = refine_mask(refined_mask_contour)
 
     # Apply the final refined mask to segment the sky.
     segmented_sky = cv2.bitwise_and(image, image, mask=refined_mask_morph)
     contours, _ = cv2.findContours(refined_mask_morph, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
     return segmented_sky, contours
 
 def get_sky_mask(image):
@@ -125,7 +139,7 @@ def get_sky_mask(image):
     # Filter contours that are likely to be the sky and refine the mask.
     refined_mask_contour = filter_sky_contours(combined_mask, image.shape[0])
 
-    # Optionally, you can further refine the mask with morphological operations if needed.
+    # Optionally, further refine the mask with morphological operations.
     refined_mask_morph = refine_mask(refined_mask_contour)
 
     return refined_mask_morph
@@ -147,10 +161,15 @@ def process_single_photo(photo_data, photos_dir, masks_dir):
         photo_filename = os.path.basename(photo_data['photoUri'])
         photo_path = os.path.join(photos_dir, photo_filename)
         
+        # Check if photo exists
+        if not os.path.exists(photo_path):
+            print(f"⚠️  Photo not found: {photo_path}")
+            return False
+        
         # Load image
         image = load_image(photo_path)
         if image is None:
-            print(f"Failed to load image: {photo_path}")
+            print(f"❌ Failed to load image: {photo_path}")
             return False
         
         # Get sky mask
@@ -159,16 +178,27 @@ def process_single_photo(photo_data, photos_dir, masks_dir):
         # Save mask with index as filename
         mask_filename = f"{photo_data['index']}.jpg"
         mask_path = os.path.join(masks_dir, mask_filename)
-        cv2.imwrite(mask_path, mask)
         
-        print(f"Generated mask for photo {photo_data['index']}: {mask_filename}")
+        # Save the mask
+        success = cv2.imwrite(mask_path, mask)
+        if not success:
+            print(f"❌ Failed to save mask: {mask_path}")
+            return False
+        
+        # Calculate some statistics for logging
+        total_pixels = mask.shape[0] * mask.shape[1]
+        sky_pixels = np.sum(mask > 128)
+        sky_percentage = (sky_pixels / total_pixels) * 100
+        
+        print(f"✅ Photo {photo_data['index']}: {mask_filename} (sky: {sky_percentage:.1f}%)")
         return True
         
     except Exception as e:
-        print(f"Error processing photo {photo_data.get('index', 'unknown')}: {e}")
+        print(f"❌ Error processing photo {photo_data.get('index', 'unknown')}: {e}")
         return False
 
 def display_results_with_contours(original, segmented, edges, contours):
+    """Display processing results with contours."""
     # Create a copy of the original image to draw contours on.
     image_with_contours = original.copy()
     cv2.drawContours(image_with_contours, contours, -1, (0, 255, 0), 3)
