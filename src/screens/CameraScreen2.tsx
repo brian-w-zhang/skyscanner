@@ -31,8 +31,11 @@ export default function CameraScreen2({ navigation }: CameraScreen2Props) {
   const cameraRef = useRef<CameraView>(null);
   const photoIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const photoUrisRef = useRef<string[]>([]);
-  const isMountedRef = useRef<boolean>(true); // Track component mount status
-  const isCapturingRef = useRef<boolean>(false); // Track if we're currently capturing
+  const isMountedRef = useRef<boolean>(true);
+  const isCapturingRef = useRef<boolean>(false);
+  
+  // Store current orientation in a ref so it's always accessible
+  const currentOrientationRef = useRef<Orientation>({ pitch: 0, yaw: 0, roll: 0 });
 
   // Create stable refs for callbacks with proper initial values
   const handleOrientationChangeRef = useRef<(orientation: Orientation) => void>(() => {});
@@ -40,6 +43,8 @@ export default function CameraScreen2({ navigation }: CameraScreen2Props) {
 
   const handleOrientationChange = useCallback((newOrientation: Orientation) => {
     setOrientation(newOrientation);
+    // Update the ref so it's always current
+    currentOrientationRef.current = newOrientation;
 
     // Only update scan tracking if scanning is active AND sky dome is loaded
     if (isScanning && isSkyDomeLoaded && scanTracker.current) {
@@ -76,9 +81,9 @@ export default function CameraScreen2({ navigation }: CameraScreen2Props) {
     try {
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.8,
-        skipProcessing: true, // Skip processing for speed
+        skipProcessing: true,
         imageType: 'jpg',
-        shutterSound: false, // Disable shutter sound
+        shutterSound: false,
       });
       
       // Double-check we're still mounted after async operation
@@ -88,7 +93,9 @@ export default function CameraScreen2({ navigation }: CameraScreen2Props) {
       
       if (photo?.uri) {
         photoUrisRef.current.push(photo.uri);
-        photoRecorder.current.recordPhotoData(photo.uri);
+        
+        // Pass the current orientation from the orientation tracker
+        photoRecorder.current.recordPhotoData(photo.uri, currentOrientationRef.current);
         
         // Only update state if component is still mounted
         if (isMountedRef.current) {
@@ -184,6 +191,7 @@ export default function CameraScreen2({ navigation }: CameraScreen2Props) {
     
     // Set initial orientation to zero since we just reset
     setInitialOrientation({ pitch: 0, yaw: 0, roll: 0 });
+    currentOrientationRef.current = { pitch: 0, yaw: 0, roll: 0 };
     
     // Reset scan tracker
     scanTracker.current?.reset();

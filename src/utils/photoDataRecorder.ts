@@ -1,9 +1,6 @@
-import { DeviceMotion } from 'expo-sensors';
-import { EventSubscription } from 'expo-modules-core';
-
 export interface PhotoData {
   index: number;
-  alpha: number;
+  alpha: number;  // Keep these names for compatibility with existing Python code
   beta: number;
   gamma: number;
   timestamp: number;
@@ -11,75 +8,37 @@ export interface PhotoData {
 }
 
 export class PhotoDataRecorder {
-  private subscription: EventSubscription | null = null;
   private isRecording = false;
   private photoData: PhotoData[] = [];
-  private latestRotation: { alpha: number; beta: number; gamma: number; timestamp: number } | null = null;
   private currentIndex = 0;
   private recordingStartTime: number = 0;
 
   constructor() {}
 
   async startRecording(): Promise<void> {
-    // Always cleanup first to ensure clean state
-    this.cleanup();
+    // Clear any existing data and reset state
+    this.photoData = [];
+    this.currentIndex = 0;
+    this.recordingStartTime = Date.now();
+    this.isRecording = true;
     
-    try {
-      // Check if DeviceMotion is available
-      const isAvailable = await DeviceMotion.isAvailableAsync();
-      if (!isAvailable) {
-        throw new Error('DeviceMotion is not available on this device');
-      }
-
-      // Request permissions
-      const permission = await DeviceMotion.requestPermissionsAsync();
-      if (!permission.granted) {
-        throw new Error('DeviceMotion permission not granted');
-      }
-
-      // Clear any existing data and reset state
-      this.photoData = [];
-      this.latestRotation = null;
-      this.currentIndex = 0;
-      this.recordingStartTime = Date.now();
-      
-      console.log('📷 Starting photo data recording...');
-
-      // Subscribe to DeviceMotion updates
-      this.subscription = DeviceMotion.addListener((data) => {
-        if (data.rotation && this.isRecording) {
-          this.latestRotation = {
-            alpha: data.rotation.alpha,
-            beta: data.rotation.beta,
-            gamma: data.rotation.gamma,
-            timestamp: data.rotation.timestamp,
-          };
-        }
-      });
-
-      // Set isRecording to true
-      this.isRecording = true;
-
-      console.log('✅ PhotoDataRecorder started successfully, isRecording:', this.isRecording);
-      console.log('📊 Recording start time:', this.recordingStartTime);
-    } catch (error) {
-      console.error('Failed to start photo data recording:', error);
-      this.cleanup();
-      throw error;
-    }
+    console.log('📷 Starting photo data recording...');
+    console.log('✅ PhotoDataRecorder started successfully, isRecording:', this.isRecording);
+    console.log('📊 Recording start time:', this.recordingStartTime);
   }
 
-  recordPhotoData(photoUri: string): void {
-    if (!this.isRecording || !this.latestRotation) {
-      console.warn('Cannot record photo data: not recording or no rotation data available');
+  recordPhotoData(photoUri: string, orientation: { pitch: number; yaw: number; roll: number }): void {
+    if (!this.isRecording) {
+      console.warn('Cannot record photo data: not recording');
       return;
     }
 
     const dataPoint: PhotoData = {
       index: this.currentIndex,
-      alpha: this.latestRotation.alpha,
-      beta: this.latestRotation.beta,
-      gamma: this.latestRotation.gamma,
+      // Map orientation tracker data to DeviceMotion equivalent naming for Python compatibility
+      alpha: orientation.yaw,    // yaw -> alpha (Z-axis rotation)
+      beta: orientation.pitch,   // pitch -> beta (X-axis rotation)  
+      gamma: orientation.roll,   // roll -> gamma (Y-axis rotation)
       timestamp: Date.now(),
       photoUri: photoUri,
     };
@@ -97,14 +56,11 @@ export class PhotoDataRecorder {
     console.log('🛑 Current isRecording state:', this.isRecording);
     console.log('🛑 Current data points before stop:', this.photoData.length);
     
-    // IMMEDIATELY set isRecording to false to prevent any new data
+    // Set isRecording to false
     this.isRecording = false;
     
-    // Make a copy of the data BEFORE cleanup
+    // Make a copy of the data
     const recordedData = [...this.photoData];
-    
-    // Clean up subscriptions
-    this.cleanup();
     
     console.log('✅ Photo recording stopped. Total data points:', recordedData.length);
     console.log('📊 Recording was active for:', stopTime - this.recordingStartTime, 'ms');
@@ -116,15 +72,6 @@ export class PhotoDataRecorder {
     }
     
     return recordedData;
-  }
-
-  private cleanup(): void {
-    // Remove the subscription
-    if (this.subscription) {
-      this.subscription.remove();
-      this.subscription = null;
-      console.log('🔄 DeviceMotion subscription removed');
-    }
   }
 
   getRecordedData(): PhotoData[] {
@@ -142,9 +89,7 @@ export class PhotoDataRecorder {
   // Clean up resources when the recorder is no longer needed
   destroy(): void {
     this.isRecording = false;
-    this.cleanup();
     this.photoData = [];
-    this.latestRotation = null;
     this.currentIndex = 0;
   }
 }
