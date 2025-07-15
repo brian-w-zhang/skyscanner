@@ -1,0 +1,154 @@
+[
+  {
+    "index": 0,
+    "alpha": 2.9067481624308367,
+    "beta": -0.08960517092265545,
+    "gamma": -3.0475458140976186,
+    "timestamp": 1752554624280,
+    "photoUri": "file:///var/mobile/Containers/Data/Application/133939C5-FC88-455B-B8AE-9396F5DA426A/Library/Caches/ExponentExperienceData/@anonymous/skyscanner-8b6c8bc7-8e36-4914-ad43-0b026bb28533/Camera/4AF2816F-CF2A-4D35-AD8D-4C66DBF87788.jpg"
+  },
+  {
+    "index": 1,
+    "alpha": 2.9303378736230834,
+    "beta": -0.04363613335256363,
+    "gamma": -2.8051185983895475,
+    "timestamp": 1752554625065,
+    "photoUri": "file:///var/mobile/Containers/Data/Application/133939C5-FC88-455B-B8AE-9396F5DA426A/Library/Caches/ExponentExperienceData/@anonymous/skyscanner-8b6c8bc7-8e36-4914-ad43-0b026bb28533/Camera/4B82CA75-F912-442B-AF89-450DD310DAF2.jpg"
+  },
+  {
+    "index": 2,
+    "alpha": 2.982084447771701,
+    "beta": 0.027426898522532547,
+    "gamma": -2.4820066552736066,
+    "timestamp": 1752554625773,
+    "photoUri": "file:///var/mobile/Containers/Data/Application/133939C5-FC88-455B-B8AE-9396F5DA426A/Library/Caches/ExponentExperienceData/@anonymous/skyscanner-8b6c8bc7-8e36-4914-ad43-0b026bb28533/Camera/0765467D-B86F-4F91-AB93-6C0C9D2D674E.jpg"
+  },
+  {
+    "index": 3,
+    "alpha": 2.9952259289411964,
+    "beta": 0.05184839075406262,
+    "gamma": -2.2652288540851253,
+    "timestamp": 1752554626617,
+    "photoUri": "file:///var/mobile/Containers/Data/Application/133939C5-FC88-455B-B8AE-9396F5DA426A/Library/Caches/ExponentExperienceData/@anonymous/skyscanner-8b6c8bc7-8e36-4914-ad43-0b026bb28533/Camera/E5F6E2F3-D877-457F-AEBD-66659097EFFF.jpg"
+  },
+  {
+    "index": 4,
+    "alpha": 2.9550873876692734,
+    "beta": 0.023040061691099595,
+    "gamma": -2.414495980234573,
+    "timestamp": 1752554627212,
+    "photoUri": "file:///var/mobile/Containers/Data/Application/133939C5-FC88-455B-B8AE-9396F5DA426A/Library/Caches/ExponentExperienceData/@anonymous/skyscanner-8b6c8bc7-8e36-4914-ad43-0b026bb28533/Camera/A14EA377-ABC1-4D85-B035-62193CB90CC9.jpg"
+  },
+  {
+    "index": 5,
+    "alpha": 2.886469095167298,
+    "beta": 0.002430825023018565,
+    "gamma": -2.945286581448964,
+    "timestamp": 1752554628313,
+    "photoUri": "file:///var/mobile/Containers/Data/Application/133939C5-FC88-455B-B8AE-9396F5DA426A/Library/Caches/ExponentExperienceData/@anonymous/skyscanner-8b6c8bc7-8e36-4914-ad43-0b026bb28533/Camera/C7B15E34-FCF4-448E-9EAF-307E4EBFBA68.jpg"
+  },
+  {
+    "index": 6,
+    "alpha": 2.8743933096496805,
+    "beta": 0.023697282980391778,
+    "gamma": 3.1069544549404777,
+    "timestamp": 1752554629038,
+    "photoUri": "file:///var/mobile/Containers/Data/Application/133939C5-FC88-455B-B8AE-9396F5DA426A/Library/Caches/ExponentExperienceData/@anonymous/skyscanner-8b6c8bc7-8e36-4914-ad43-0b026bb28533/Camera/350D2D1A-0626-4EB5-9067-651883C05676.jpg"
+  },
+  {
+    "index": 7,
+    "alpha": 2.8435546860556147,
+    "beta": 0.0006168312433048324,
+    "gamma": 2.856181438990137,
+    "timestamp": 1752554629793,
+    "photoUri": "file:///var/mobile/Containers/Data/Application/133939C5-FC88-455B-B8AE-9396F5DA426A/Library/Caches/ExponentExperienceData/@anonymous/skyscanner-8b6c8bc7-8e36-4914-ad43-0b026bb28533/Camera/1DC9E113-DB88-4492-B40F-D9A85BBAB843.jpg"
+  },
+  {
+    "index": 8,
+    "alpha": 2.776458122739255,
+    "beta": 0.0056607805650375955,
+    "gamma": 2.4037527901812226,
+    "timestamp": 1752554631295,
+    "photoUri": "file:///var/mobile/Containers/Data/Application/133939C5-FC88-455B-B8AE-9396F5DA426A/Library/Caches/ExponentExperienceData/@anonymous/skyscanner-8b6c8bc7-8e36-4914-ad43-0b026bb28533/Camera/C0A2B7F8-0D8A-433A-AB00-0FA6632BFC38.jpg"
+  },
+  {
+    "index": 9,
+    "alpha": 2.8258092443777705,
+    "beta": -0.03407353010233972,
+    "gamma": 2.825463887240387,
+    "timestamp": 1752554632452,
+    "photoUri": "file:///var/mobile/Containers/Data/Application/133939C5-FC88-455B-B8AE-9396F5DA426A/Library/Caches/ExponentExperienceData/@anonymous/skyscanner-8b6c8bc7-8e36-4914-ad43-0b026bb28533/Camera/AB871E1A-FCBC-4475-98D4-3A08A909CFEC.jpg"
+  },
+  {
+    "index": 10,
+    "alpha": 2.930773308229646,
+    "beta": -0.007128470085016362,
+    "gamma": -3.06236354648804,
+    "timestamp": 1752554633452,
+    "photoUri": "file:///var/mobile/Containers/Data/Application/133939C5-FC88-455B-B8AE-9396F5DA426A/Library/Caches/ExponentExperienceData/@anonymous/skyscanner-8b6c8bc7-8e36-4914-ad43-0b026bb28533/Camera/564750EB-B78F-4BA2-80D5-08F7E0E6334B.jpg"
+  },
+  {
+    "index": 11,
+    "alpha": 2.9398881905672933,
+    "beta": 0.3222042207709571,
+    "gamma": -3.059157413768617,
+    "timestamp": 1752554634055,
+    "photoUri": "file:///var/mobile/Containers/Data/Application/133939C5-FC88-455B-B8AE-9396F5DA426A/Library/Caches/ExponentExperienceData/@anonymous/skyscanner-8b6c8bc7-8e36-4914-ad43-0b026bb28533/Camera/A762D57A-1C71-42FC-B00A-10317B04CC48.jpg"
+  },
+  {
+    "index": 12,
+    "alpha": 2.9678977460059306,
+    "beta": 0.625297478266062,
+    "gamma": -3.0434923797977604,
+    "timestamp": 1752554634897,
+    "photoUri": "file:///var/mobile/Containers/Data/Application/133939C5-FC88-455B-B8AE-9396F5DA426A/Library/Caches/ExponentExperienceData/@anonymous/skyscanner-8b6c8bc7-8e36-4914-ad43-0b026bb28533/Camera/6389667B-E33D-4AEA-822E-1447DBA410C5.jpg"
+  },
+  {
+    "index": 13,
+    "alpha": 2.9941885939313857,
+    "beta": 0.1998798387528075,
+    "gamma": -3.0361358449709552,
+    "timestamp": 1752554635774,
+    "photoUri": "file:///var/mobile/Containers/Data/Application/133939C5-FC88-455B-B8AE-9396F5DA426A/Library/Caches/ExponentExperienceData/@anonymous/skyscanner-8b6c8bc7-8e36-4914-ad43-0b026bb28533/Camera/5699E4D2-B72E-4344-B98A-DB9B8BF6CB9C.jpg"
+  },
+  {
+    "index": 14,
+    "alpha": 2.924260897269566,
+    "beta": -0.22892492057761665,
+    "gamma": -3.094587640910813,
+    "timestamp": 1752554636709,
+    "photoUri": "file:///var/mobile/Containers/Data/Application/133939C5-FC88-455B-B8AE-9396F5DA426A/Library/Caches/ExponentExperienceData/@anonymous/skyscanner-8b6c8bc7-8e36-4914-ad43-0b026bb28533/Camera/E52F9BEA-6D5A-40E5-9183-FEB182F87133.jpg"
+  },
+  {
+    "index": 15,
+    "alpha": 2.8512295944106194,
+    "beta": -0.5055907018114756,
+    "gamma": -3.0750342481733375,
+    "timestamp": 1752554637538,
+    "photoUri": "file:///var/mobile/Containers/Data/Application/133939C5-FC88-455B-B8AE-9396F5DA426A/Library/Caches/ExponentExperienceData/@anonymous/skyscanner-8b6c8bc7-8e36-4914-ad43-0b026bb28533/Camera/3521D12B-9103-420F-888C-1433DB0E044F.jpg"
+  },
+  {
+    "index": 16,
+    "alpha": 2.9825430745461126,
+    "beta": -0.4740522521206538,
+    "gamma": -2.575632931153834,
+    "timestamp": 1752554638681,
+    "photoUri": "file:///var/mobile/Containers/Data/Application/133939C5-FC88-455B-B8AE-9396F5DA426A/Library/Caches/ExponentExperienceData/@anonymous/skyscanner-8b6c8bc7-8e36-4914-ad43-0b026bb28533/Camera/518C6518-F18D-4E97-B10A-CAE28BEA6CCC.jpg"
+  },
+  {
+    "index": 17,
+    "alpha": 2.8334905231153638,
+    "beta": -0.48648272042906987,
+    "gamma": -3.0479496594869913,
+    "timestamp": 1752554639332,
+    "photoUri": "file:///var/mobile/Containers/Data/Application/133939C5-FC88-455B-B8AE-9396F5DA426A/Library/Caches/ExponentExperienceData/@anonymous/skyscanner-8b6c8bc7-8e36-4914-ad43-0b026bb28533/Camera/0C95A5D3-BF5D-4A85-A775-29FCDD9B4544.jpg"
+  },
+  {
+    "index": 18,
+    "alpha": 2.647898890825404,
+    "beta": -0.45739308325619815,
+    "gamma": 2.8470074111298587,
+    "timestamp": 1752554640234,
+    "photoUri": "file:///var/mobile/Containers/Data/Application/133939C5-FC88-455B-B8AE-9396F5DA426A/Library/Caches/ExponentExperienceData/@anonymous/skyscanner-8b6c8bc7-8e36-4914-ad43-0b026bb28533/Camera/D345E27B-30F1-4BC0-8B5E-D5097F7D5994.jpg"
+  }
+]
