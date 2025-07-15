@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
+import { Ionicons } from '@expo/vector-icons';
 
 interface AccelerometerOverlayProps {
   onScanStart?: () => void;
@@ -12,13 +13,6 @@ interface ThresholdState {
   message: string;
   status: 'perfect' | 'close' | 'adjust';
 }
-
-// Simple camera icon component
-const CameraIcon = ({ color, size = 16 }: { color: string; size?: number }) => (
-  <View style={[styles.cameraIcon, { width: size, height: size, borderColor: color }]}>
-    <View style={[styles.cameraLens, { backgroundColor: color }]} />
-  </View>
-);
 
 export default function AccelerometerOverlay({ onScanStart }: AccelerometerOverlayProps) {
   const [accelerometerData, setAccelerometerData] = useState({ x: 0, y: 0, z: 0 });
@@ -116,46 +110,35 @@ export default function AccelerometerOverlay({ onScanStart }: AccelerometerOverl
         </View>
       </View>
 
-      {/* Telemetry panel - compact version */}
-      <View style={styles.telemetryContainer}>
-        <View style={styles.telemetryPanel}>
-          <View style={styles.telemetryGrid}>
-            <View style={styles.telemetryItem}>
-              <Text style={styles.telemetryLabel}>PITCH</Text>
-              <Text style={styles.telemetryValue}>{pitchValue.toFixed(1)}°</Text>
-            </View>
-            
-            <View style={styles.telemetryDivider} />
-            
-            <View style={styles.telemetryItem}>
-              <Text style={styles.telemetryLabel}>ROLL</Text>
-              <Text style={styles.telemetryValue}>{rollValue.toFixed(1)}°</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      {/* Scan button - only shows when pointing at sky */}
+      {/* Scan button - positioned under main text box */}
       {isPointingAtSky && onScanStart && (
         <View style={styles.scanButtonContainer}>
           <TouchableOpacity
-            style={[
-              styles.scanButton,
-              {
-                borderColor: thresholdState.color,
-                shadowColor: thresholdState.color,
-              }
-            ]}
+            style={styles.scanButton}
             onPress={onScanStart}
             activeOpacity={0.8}
           >
             <View style={styles.scanButtonContent}>
-              <CameraIcon color={thresholdState.color} size={18} />
-              <Text style={styles.scanButtonText}>INITIATE SKY SCAN</Text>
+              <Ionicons name="camera-outline" size={16} color="white" />
+              <Text style={styles.scanButtonText}>START SCAN</Text>
             </View>
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Telemetry panel - bottom left corner */}
+      <View style={styles.telemetryContainer}>
+        <View style={styles.telemetryPanel}>
+          <View style={styles.telemetryRow}>
+            <Text style={styles.telemetryLabel}>PITCH</Text>
+            <Text style={styles.telemetryValue}>{pitchValue.toFixed(1)}°</Text>
+          </View>
+          <View style={styles.telemetryRow}>
+            <Text style={styles.telemetryLabel}>ROLL</Text>
+            <Text style={styles.telemetryValue}>{rollValue.toFixed(1)}°</Text>
+          </View>
+        </View>
+      </View>
     </>
   );
 }
@@ -194,69 +177,21 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1,
   },
-  telemetryContainer: {
-    position: 'absolute',
-    top: '58%',
-    left: 40,
-    right: 40,
-    alignItems: 'center',
-    zIndex: 2,
-  },
-  telemetryPanel: {
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    minWidth: 200,
-  },
-  telemetryGrid: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  telemetryItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  telemetryDivider: {
-    width: 1,
-    height: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    marginHorizontal: 16,
-  },
-  telemetryLabel: {
-    color: '#999',
-    fontSize: 9,
-    fontWeight: '500',
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  telemetryValue: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'monospace',
-  },
   scanButtonContainer: {
     position: 'absolute',
-    bottom: 200,
+    top: '58%', // Positioned directly under the main text box
     left: 0,
     right: 0,
     alignItems: 'center',
     zIndex: 4,
   },
   scanButton: {
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-    borderWidth: 2,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     borderRadius: 8,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 20,
-    elevation: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   scanButtonContent: {
     flexDirection: 'row',
@@ -264,21 +199,42 @@ const styles = StyleSheet.create({
   },
   scanButtonText: {
     color: 'white',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginLeft: 12,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    marginLeft: 8,
   },
-  cameraIcon: {
-    borderWidth: 1.5,
-    borderRadius: 3,
+  telemetryContainer: {
+    position: 'absolute',
+    bottom: 40,
+    left: 20,
+    zIndex: 2,
+  },
+  telemetryPanel: {
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  telemetryRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    marginVertical: 2,
   },
-  cameraLens: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+  telemetryLabel: {
+    color: '#999',
+    fontSize: 10,
+    fontWeight: '500',
+    letterSpacing: 0.5,
+    width: 35,
+  },
+  telemetryValue: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'monospace',
+    marginLeft: 8,
   },
 });

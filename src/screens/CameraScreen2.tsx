@@ -140,13 +140,13 @@ export default function CameraScreen2({ navigation }: CameraScreen2Props) {
       photoUrisRef.current = [];
       setPhotoCount(0);
 
-      // Start taking photos every 300ms
+      // Start taking photos every 200ms
       photoIntervalRef.current = setInterval(() => {
         // Only take photo if component is still mounted
         if (isMountedRef.current) {
           takePhoto();
         }
-      }, 300);
+      }, 200);
 
       console.log('✅ Photo capture started');
     } catch (error) {

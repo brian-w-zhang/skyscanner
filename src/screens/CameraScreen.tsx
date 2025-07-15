@@ -198,7 +198,7 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
 
   // Initialize rotation recorder ONCE - no dependencies
   useEffect(() => {
-    rotationRecorder.current = new RotationDataRecorder(300);
+    rotationRecorder.current = new RotationDataRecorder(200);
     
     return () => {
       if (rotationRecorder.current) {

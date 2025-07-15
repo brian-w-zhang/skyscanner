@@ -72,11 +72,11 @@ export default function GalleryScreen2({ navigation, route }: GalleryScreen2Prop
           <View style={styles.photoOverlay}>
             <View style={styles.photoHeader}>
               <Text style={styles.photoIndex}>{index}</Text>
-              {selectedPhoto === index && (
+              {/* {selectedPhoto === index && (
                 <View style={styles.selectedIndicator}>
                   <Ionicons name="checkmark-circle" size={16} color="#00D4FF" />
                 </View>
-              )}
+              )} */}
             </View>
             {photoDataPoint && (
               <View style={styles.rotationInfo}>
@@ -107,8 +107,13 @@ export default function GalleryScreen2({ navigation, route }: GalleryScreen2Prop
         <View style={styles.orientationGrid}>
           <View style={styles.orientationItem}>
             <Text style={styles.orientationLabel}>PITCH</Text>
-            <Text style={styles.orientationValue}>
-              {photoDataPoint ? `${photoDataPoint.beta.toFixed(4)} rad` : '----.---- rad'}
+            <Text
+              style={[
+                styles.orientationValue,
+                !photoDataPoint && styles.orientationValueNoData,
+              ]}
+            >
+              {photoDataPoint ? `${photoDataPoint.beta.toFixed(4)} rad` : 'NO DATA'}
             </Text>
             <View style={styles.orientationIndicator}>
               <Ionicons name="arrow-up" size={16} color={photoDataPoint ? "#00D4FF" : "#333"} />
@@ -117,8 +122,13 @@ export default function GalleryScreen2({ navigation, route }: GalleryScreen2Prop
           
           <View style={styles.orientationItem}>
             <Text style={styles.orientationLabel}>YAW</Text>
-            <Text style={styles.orientationValue}>
-              {photoDataPoint ? `${photoDataPoint.alpha.toFixed(4)} rad` : '----.---- rad'}
+            <Text
+              style={[
+                styles.orientationValue,
+                !photoDataPoint && styles.orientationValueNoData,
+              ]}
+            >
+              {photoDataPoint ? `${photoDataPoint.alpha.toFixed(4)} rad` : 'NO DATA'}
             </Text>
             <View style={styles.orientationIndicator}>
               <Ionicons name="sync" size={16} color={photoDataPoint ? "#00D4FF" : "#333"} />
@@ -127,8 +137,13 @@ export default function GalleryScreen2({ navigation, route }: GalleryScreen2Prop
           
           <View style={styles.orientationItem}>
             <Text style={styles.orientationLabel}>ROLL</Text>
-            <Text style={styles.orientationValue}>
-              {photoDataPoint ? `${photoDataPoint.gamma.toFixed(4)} rad` : '----.---- rad'}
+            <Text
+              style={[
+                styles.orientationValue,
+                !photoDataPoint && styles.orientationValueNoData,
+              ]}
+            >
+              {photoDataPoint ? `${photoDataPoint.gamma.toFixed(4)} rad` : 'NO DATA'}
             </Text>
             <View style={styles.orientationIndicator}>
               <Ionicons name="refresh" size={16} color={photoDataPoint ? "#00D4FF" : "#333"} />
@@ -446,5 +461,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.5,
     marginLeft: 8,
+  },
+  orientationValueNoData: {
+    color: '#8A8A8A', // Grey color similar to the icons
+    opacity: 0.7,     // Slightly dimmed
   },
 });
