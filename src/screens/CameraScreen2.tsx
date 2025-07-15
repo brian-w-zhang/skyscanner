@@ -24,6 +24,7 @@ export default function CameraScreen2({ navigation }: CameraScreen2Props) {
   const [isSkyDomeLoaded, setIsSkyDomeLoaded] = useState(false);
   const [scanCoverage, setScanCoverage] = useState<ScanCoverage>({ totalCoverage: 0, scannedPoints: [] });
   const [photoCount, setPhotoCount] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false); // New state for processing
   
   const orientationTracker = useRef<OrientationTracker | null>(null);
   const scanTracker = useRef<ScanTracker | null>(null);
@@ -217,14 +218,17 @@ export default function CameraScreen2({ navigation }: CameraScreen2Props) {
 
   const handleScanStop = useCallback(async () => {
     // Prevent multiple calls
-    if (!isScanning || !isMountedRef.current) {
-      console.log('⚠️ handleScanStop called but not scanning or unmounted, ignoring...');
+    if (!isScanning || !isMountedRef.current || isProcessing) {
+      console.log('⚠️ handleScanStop called but not scanning or unmounted or already processing, ignoring...');
       return;
     }
 
     console.log('🛑 handleScanStop starting...');
     
-    // NOW update the React state after stopping the recorder
+    // Show processing loader immediately
+    setIsProcessing(true);
+    
+    // Update the React state after stopping the recorder
     setIsScanning(false);
     setIsSkyDomeLoaded(false);
     
@@ -232,7 +236,7 @@ export default function CameraScreen2({ navigation }: CameraScreen2Props) {
     await stopPhotoCapture();
     
     console.log('🛑 handleScanStop completed');
-  }, [isScanning, stopPhotoCapture]);
+  }, [isScanning, stopPhotoCapture, isProcessing]);
 
   // Track component mount status
   useEffect(() => {
@@ -319,9 +323,13 @@ export default function CameraScreen2({ navigation }: CameraScreen2Props) {
       
       {/* All overlays moved outside CameraView with absolute positioning */}
       
-      {/* Show either AccelerometerOverlay or SkyDome3D based on scanning state */}
-      {!isScanning ? (
-      <AccelerometerOverlay onScanStart={handleScanStart} />
+      {/* Show processing loader, or AccelerometerOverlay, or SkyDome3D based on state */}
+      {isProcessing ? (
+        <View style={styles.processingContainer}>
+          <ActivityIndicator size="large" color="#ffffff" />
+        </View>
+      ) : !isScanning ? (
+        <AccelerometerOverlay onScanStart={handleScanStart} />
       ) : (
         <>
           {!isSkyDomeLoaded && (
@@ -477,5 +485,22 @@ const styles = StyleSheet.create({
     left: '50%',
     transform: [{ translateX: -25 }, { translateY: -25 }],
     zIndex: 3,
+  },
+  processingContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  processingText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+    marginTop: 12,
   },
 });

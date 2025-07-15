@@ -36,7 +36,6 @@ export function Starbits({}: StarbitsProps) {
       transparent: true,
       opacity: 0.8,
       side: THREE.DoubleSide,
-      blending: THREE.AdditiveBlending, // Keep glow effect
     });
 
     // Calculate star count based on area
