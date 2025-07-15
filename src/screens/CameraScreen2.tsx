@@ -161,8 +161,17 @@ export default function CameraScreen2({ navigation }: CameraScreen2Props) {
       photoIntervalRef.current = null;
     }
 
-    // Wait a bit for any ongoing photo capture to complete
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Wait for any ongoing photo capture to complete
+    let tries = 0;
+    while (
+      isCapturingRef.current ||
+      (photoRecorder.current &&
+        photoUrisRef.current.length > photoRecorder.current.getCurrentPhotoCount() &&
+        tries < 20)
+    ) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      tries++;
+    }
 
     // Stop photo data recording and get data
     let photoData: PhotoData[] = [];

@@ -15,7 +15,8 @@ interface GalleryScreen2Props {
 }
 
 const { width } = Dimensions.get('window');
-const photoSize = (width - 60) / 3; // 3 photos per row with padding
+const photoSpacing = 6; // Gap between photos
+const photoSize = (width - 40 - (photoSpacing * 2)) / 3; // 3 photos per row with padding and gaps
 
 export default function GalleryScreen2({ navigation, route }: GalleryScreen2Props) {
   const { photoUris, photoData } = route.params;
@@ -211,12 +212,12 @@ const styles = StyleSheet.create({
   photoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    gap: photoSpacing,
   },
   photoContainer: {
     width: photoSize,
     height: photoSize,
-    marginBottom: 12,
     position: 'relative',
     borderRadius: 8,
     overflow: 'hidden',
