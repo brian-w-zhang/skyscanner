@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
-import gradio as gr
+import os
 
 def load_image(image_path):
     image = cv2.imread(image_path)
@@ -9,6 +9,7 @@ def load_image(image_path):
         print(f"Error: Unable to load image at {image_path}")
         return None
     return image
+
 def filter_sky_contours(mask, image_height, min_area=8000, max_area=None, height_ratio=0.2):
     """
     Filter contours that are likely to be the sky based on area and position.
@@ -40,6 +41,7 @@ def filter_sky_contours(mask, image_height, min_area=8000, max_area=None, height
             if aspect_ratio > 1 and smoothness > 0.5:  # Adjust thresholds as necessary
                 cv2.drawContours(sky_mask, [contour], -1, (255), thickness=cv2.FILLED)
     return sky_mask
+
 def detect_edges(image):
     # Convert to grayscale
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -64,8 +66,6 @@ def detect_edges(image):
     edge_processed = cv2.erode(edge_dilated, kernel, iterations=1)
     
     return edge_processed
-
-
 
 def adaptive_threshold_sky(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -100,6 +100,73 @@ def segment_sky(image):
     contours, _ = cv2.findContours(refined_mask_morph, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return segmented_sky, contours
 
+def get_sky_mask(image):
+    """
+    Get binary sky mask from image.
+    
+    Parameters:
+    - image: Input image
+    
+    Returns:
+    - mask: Binary mask where sky pixels are white (255) and non-sky pixels are black (0)
+    """
+    # Detect edges.
+    edges = detect_edges(image)
+
+    # Invert the edges.
+    edges_inv = cv2.bitwise_not(edges)
+
+    # Create a color mask using adaptive thresholding.
+    color_mask = adaptive_threshold_sky(image)
+
+    # Combine the color mask with the inverted edges to get an initial sky mask.
+    combined_mask = cv2.bitwise_and(color_mask, edges_inv)
+
+    # Filter contours that are likely to be the sky and refine the mask.
+    refined_mask_contour = filter_sky_contours(combined_mask, image.shape[0])
+
+    # Optionally, you can further refine the mask with morphological operations if needed.
+    refined_mask_morph = refine_mask(refined_mask_contour)
+
+    return refined_mask_morph
+
+def process_single_photo(photo_data, photos_dir, masks_dir):
+    """
+    Process a single photo and generate its mask.
+    
+    Parameters:
+    - photo_data: Dictionary containing photo information
+    - photos_dir: Directory containing photos
+    - masks_dir: Directory to save masks
+    
+    Returns:
+    - success: Boolean indicating if processing was successful
+    """
+    try:
+        # Extract filename from photoUri
+        photo_filename = os.path.basename(photo_data['photoUri'])
+        photo_path = os.path.join(photos_dir, photo_filename)
+        
+        # Load image
+        image = load_image(photo_path)
+        if image is None:
+            print(f"Failed to load image: {photo_path}")
+            return False
+        
+        # Get sky mask
+        mask = get_sky_mask(image)
+        
+        # Save mask with index as filename
+        mask_filename = f"{photo_data['index']}.jpg"
+        mask_path = os.path.join(masks_dir, mask_filename)
+        cv2.imwrite(mask_path, mask)
+        
+        print(f"Generated mask for photo {photo_data['index']}: {mask_filename}")
+        return True
+        
+    except Exception as e:
+        print(f"Error processing photo {photo_data.get('index', 'unknown')}: {e}")
+        return False
 
 def display_results_with_contours(original, segmented, edges, contours):
     # Create a copy of the original image to draw contours on.
@@ -125,29 +192,3 @@ def display_results_with_contours(original, segmented, edges, contours):
     plt.title('Contours')
 
     plt.show()
-
-def process_and_display(image):
-    # Convert the uploaded PIL image to an OpenCV format
-    image = np.array(image)
-    image = image[:, :, :3]  # Ensure the image is in RGB format
-    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-
-    # Segment the sky
-    segmented_sky, _ = segment_sky(image)
-
-    # Prepare the segmented sky image for display in Gradio
-    segmented_rgb = cv2.cvtColor(segmented_sky, cv2.COLOR_BGR2RGB)
-
-    return segmented_rgb
-
-# # Set up the Gradio interface
-# iface = gr.Interface(
-#     fn=process_and_display,
-#     inputs=gr.Image(),
-#     outputs=gr.Image(label="Segmented Sky"),
-#     title="Sky Pixel Identification",
-#     description="Upload an image to see the segmented sky."
-# )
-
-# # Run the app
-# iface.launch()
