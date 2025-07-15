@@ -60,6 +60,11 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
     if (cameraRef.current && !isRecording) {
       try {
         setIsRecording(true);
+
+        // Log the time right before starting rotation recording
+        const rotationStartLogTime = Date.now();
+        console.log('⏱️ About to start rotation data recording at:', rotationStartLogTime);
+
         
         // Start rotation data recording at the same time as video recording
         if (rotationRecorder.current) {
@@ -73,12 +78,22 @@ export default function CameraScreen({ navigation }: CameraScreenProps) {
         } else {
           console.error('❌ rotationRecorder.current is null');
         }
-        
+
+        // Log the time right before starting video recording
+        const videoStartLogTime = Date.now();
+        console.log('⏱️ About to start video recording at:', videoStartLogTime);
+
         // Start video recording
         const video = await cameraRef.current.recordAsync({
           maxDuration: 300, // 5 minutes max
         });
         recordingRef.current = video;
+
+        const videoStartAfterLogTime = Date.now();
+        console.log('⏱️ Started video recording at:', videoStartAfterLogTime);
+        console.log('⏱️ Time difference between rotation and video start:', videoStartLogTime - rotationStartLogTime, 'ms');
+        console.log('⏱️ Time difference between rotation and video start after:', videoStartAfterLogTime - rotationStartLogTime, 'ms');
+
       } catch (error) {
         console.error('Error starting video recording:', error);
         setIsRecording(false);
