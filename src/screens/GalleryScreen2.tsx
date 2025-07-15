@@ -14,7 +14,7 @@ interface GalleryScreen2Props {
   };
 }
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const photoSpacing = 6; // Gap between photos
 const photoSize = (width - 40 - (photoSpacing * 2)) / 3; // 3 photos per row with padding and gaps
 
@@ -91,41 +91,68 @@ export default function GalleryScreen2({ navigation, route }: GalleryScreen2Prop
     });
   };
 
-  const renderSelectedPhotoDetails = () => {
-    if (selectedPhoto === null) return null;
-    
-    const photoDataPoint = photoData.find(data => data.index === selectedPhoto);
-    if (!photoDataPoint) return null;
+  const renderOrientationPanel = () => {
+    const photoDataPoint = selectedPhoto !== null ? photoData.find(data => data.index === selectedPhoto) : null;
 
     return (
-      <View style={styles.detailsContainer}>
-        <View style={styles.detailsHeader}>
-          <Text style={styles.detailsTitle}>PHOTO {selectedPhoto} ORIENTATION</Text>
-          <TouchableOpacity onPress={() => setSelectedPhoto(null)}>
-            <Ionicons name="close" size={20} color="#8A8A8A" />
-          </TouchableOpacity>
-        </View>
-        
-        <View style={styles.detailsGrid}>
-          <View style={styles.detailsItem}>
-            <Text style={styles.detailsLabel}>PITCH</Text>
-            <Text style={styles.detailsValue}>{photoDataPoint.beta.toFixed(4)}°</Text>
-          </View>
-          <View style={styles.detailsItem}>
-            <Text style={styles.detailsLabel}>YAW</Text>
-            <Text style={styles.detailsValue}>{photoDataPoint.alpha.toFixed(4)}°</Text>
-          </View>
-          <View style={styles.detailsItem}>
-            <Text style={styles.detailsLabel}>ROLL</Text>
-            <Text style={styles.detailsValue}>{photoDataPoint.gamma.toFixed(4)}°</Text>
+      <View style={styles.orientationPanel}>
+        <View style={styles.orientationHeader}>
+          <Text style={styles.orientationTitle}>ORIENTATION DATA</Text>
+          <View style={styles.orientationSubtitle}>
+            <Ionicons name="compass" size={14} color="#8A8A8A" />
+            <Text style={styles.orientationSubtitleText}>FROM GYROSCOPE CALCULATIONS</Text>
           </View>
         </View>
         
-        <View style={styles.timestampContainer}>
-          <Text style={styles.timestampLabel}>CAPTURED</Text>
-          <Text style={styles.timestampValue}>
-            {new Date(photoDataPoint.timestamp).toLocaleTimeString()}
-          </Text>
+        <View style={styles.orientationGrid}>
+          <View style={styles.orientationItem}>
+            <Text style={styles.orientationLabel}>PITCH</Text>
+            <Text style={styles.orientationValue}>
+              {photoDataPoint ? `${photoDataPoint.beta.toFixed(4)} rad` : '----.---- rad'}
+            </Text>
+            <View style={styles.orientationIndicator}>
+              <Ionicons name="arrow-up" size={16} color={photoDataPoint ? "#00D4FF" : "#333"} />
+            </View>
+          </View>
+          
+          <View style={styles.orientationItem}>
+            <Text style={styles.orientationLabel}>YAW</Text>
+            <Text style={styles.orientationValue}>
+              {photoDataPoint ? `${photoDataPoint.alpha.toFixed(4)} rad` : '----.---- rad'}
+            </Text>
+            <View style={styles.orientationIndicator}>
+              <Ionicons name="sync" size={16} color={photoDataPoint ? "#00D4FF" : "#333"} />
+            </View>
+          </View>
+          
+          <View style={styles.orientationItem}>
+            <Text style={styles.orientationLabel}>ROLL</Text>
+            <Text style={styles.orientationValue}>
+              {photoDataPoint ? `${photoDataPoint.gamma.toFixed(4)} rad` : '----.---- rad'}
+            </Text>
+            <View style={styles.orientationIndicator}>
+              <Ionicons name="refresh" size={16} color={photoDataPoint ? "#00D4FF" : "#333"} />
+            </View>
+          </View>
+        </View>
+        
+        <View style={styles.orientationFooter}>
+          <View style={styles.statusRow}>
+            <View style={styles.statusContainer}>
+              <View style={[styles.statusDot, { backgroundColor: photoDataPoint ? "#00D4FF" : "#333" }]} />
+              <Text style={styles.statusText}>
+                {photoDataPoint ? `PHOTO ${selectedPhoto} SELECTED` : 'SELECT PHOTO TO VIEW DATA'}
+              </Text>
+            </View>
+            
+            {photoDataPoint && (
+              <View style={styles.timestampContainer}>
+                <Text style={styles.timestampValue}>
+                  TIMESTAMP: {new Date(photoDataPoint.timestamp).toLocaleTimeString()}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
       </View>
     );
@@ -146,13 +173,15 @@ export default function GalleryScreen2({ navigation, route }: GalleryScreen2Prop
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.photoGrid}>
-          {renderPhotoGrid()}
-        </View>
+      <View style={styles.mainContent}>
+        <ScrollView style={styles.photoScrollContainer} contentContainerStyle={styles.photoScrollContent}>
+          <View style={styles.photoGrid}>
+            {renderPhotoGrid()}
+          </View>
+        </ScrollView>
         
-        {renderSelectedPhotoDetails()}
-      </ScrollView>
+        {renderOrientationPanel()}
+      </View>
 
       <View style={styles.controls}>
         <TouchableOpacity style={styles.controlButton} onPress={handleReturnToCamera}>
@@ -202,11 +231,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginTop: 2,
   },
-  scrollContainer: {
+  mainContent: {
+    flex: 1,
+    flexDirection: 'column',
+  },
+  photoScrollContainer: {
     flex: 1,
     backgroundColor: '#000000',
   },
-  scrollContent: {
+  photoScrollContent: {
     padding: 20,
   },
   photoGrid: {
@@ -281,65 +314,109 @@ const styles = StyleSheet.create({
     minWidth: 30,
     textAlign: 'center',
   },
-  detailsContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: 12,
-    padding: 20,
-    marginTop: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+  orientationPanel: {
+    backgroundColor: '#0A0A0A',
+    borderTopWidth: 1,
+    borderTopColor: '#1A1A1A',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    minHeight: 200,
   },
-  detailsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  orientationHeader: {
     marginBottom: 20,
   },
-  detailsTitle: {
+  orientationTitle: {
     color: 'white',
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 1,
+    marginBottom: 4,
   },
-  detailsGrid: {
+  orientationSubtitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  orientationSubtitleText: {
+    color: '#8A8A8A',
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 0.5,
+    marginLeft: 6,
+  },
+  orientationGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 20,
   },
-  detailsItem: {
+  orientationItem: {
     flex: 1,
     alignItems: 'center',
     paddingHorizontal: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: 8,
+    paddingVertical: 12,
+    marginHorizontal: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
-  detailsLabel: {
+  orientationLabel: {
     color: '#8A8A8A',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     letterSpacing: 0.5,
-    marginBottom: 4,
+    marginBottom: 6,
   },
-  detailsValue: {
+  orientationValue: {
     color: '#00D4FF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
     fontFamily: 'monospace',
+    marginBottom: 8,
   },
-  timestampContainer: {
-    alignItems: 'center',
+  orientationIndicator: {
+    opacity: 0.7,
+  },
+  orientationFooter: {
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.08)',
   },
-  timestampLabel: {
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 32,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  statusText: {
     color: '#8A8A8A',
     fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  timestampContainer: {
+    alignItems: 'flex-end',
+  },
+  timestampLabel: {
+    color: '#8A8A8A',
+    fontSize: 11,
     fontWeight: '600',
     letterSpacing: 0.5,
     marginBottom: 4,
   },
   timestampValue: {
-    color: 'white',
-    fontSize: 14,
+    color: '#8A8A8A',
+    fontSize: 13,
     fontWeight: '500',
     fontFamily: 'monospace',
   },
