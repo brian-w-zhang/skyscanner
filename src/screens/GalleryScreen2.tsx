@@ -52,7 +52,7 @@ export default function GalleryScreen2({ navigation, route }: GalleryScreen2Prop
   };
 
   const handleGoHome = () => {
-    navigation.replace('Home');
+    navigation.popToTop();
   };
 
   const renderPhotoGrid = () => {
