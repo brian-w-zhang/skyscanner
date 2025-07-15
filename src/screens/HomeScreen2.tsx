@@ -33,15 +33,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         </View>
         <View style={styles.buttonContainer}>
           <BlurryButton
-            title="Check for Obstructions (Video)"
-            onPress={() => navigation.navigate('CameraScreen')}
-            style={styles.button}
-            icon="camera-outline"
-          />
-          <BlurryButton
-            title="Check for Obstructions (Photos)"
+            title="Check for Obstructions"
             onPress={() => navigation.navigate('CameraScreen2')}
-            style={{ ...styles.button, marginTop: 15 }}
+            style={styles.button}
             icon="camera-outline"
           />
         </View>
@@ -74,27 +68,24 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start', // Changed from 'center' to 'flex-start'
+    paddingTop: 40, // Added padding to move content up
   },
   titleContainer: {
-    marginBottom: 40,
-    alignItems: 'center',
+    paddingTop: 0, // Removed padding to move title up
+    marginBottom: 20, // Space between title and card
   },
   title: {
-    fontSize: 48,
+    fontSize: 36,
     fontWeight: 'bold',
-    color: 'white',
     textAlign: 'center',
-    letterSpacing: 4,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
+    color: 'white',
+    letterSpacing: 8,
   },
   buttonContainer: {
-    alignItems: 'center',
-    justifyContent: 'flex-end',
+    paddingBottom: 15, // Raises button higher from bottom
   },
   button: {
-    width: '80%',
+    marginHorizontal: 0,
   },
 });
