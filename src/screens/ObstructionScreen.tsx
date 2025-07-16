@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect } from 'react';
+import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView } from 'react-native';
 import { Canvas, useFrame } from '@react-three/fiber/native';
 import { useGLTF } from '@react-three/drei/native';
@@ -98,10 +98,17 @@ function CompassMarks() {
 }
 
 // Component to load and display both GLB files with auto-rotation
-function DishyModel() {
+function DishyModel({ forceRefresh }: { forceRefresh: number }) {
   const [dishAssets] = useAssets([require('../../assets/3d/dishy.glb')]);
-//   const [obstAssets] = useAssets([require('../new_testing/model/dome_sky_model.glb')]);
-  const [obstAssets] = useAssets([require('./dome_sky_model.glb')]);
+  
+  // Force re-evaluation by creating a new array reference when forceRefresh changes
+  const obstAssetArray = useMemo(() => {
+    console.log('🔄 Creating new asset array, refresh count:', forceRefresh);
+    return [require('../new_testing/model/dome_sky_model.glb')];
+  }, [forceRefresh]);
+  
+  const [obstAssets] = useAssets(obstAssetArray);
+
   const sceneRef = useRef<THREE.Group>(null);
   
   // Auto-rotate everything
@@ -156,7 +163,7 @@ function DishyModel() {
     try {
       const { scene: obstScene } = useGLTF(obstAssets[0].localUri || obstAssets[0].uri);
       obstructionScene = obstScene;
-      console.log('✅ Obstruction model loaded from local file');
+      console.log('✅ Obstruction model loaded from local file (refresh:', forceRefresh, ')');
     } catch (error) {
       const typedError = error as Error; // Explicitly cast to Error
       console.log('ℹ️ No obstruction model available yet:', typedError.message);
@@ -167,7 +174,7 @@ function DishyModel() {
   const rotation_in_degrees = [21, 0, 0];
   const radians = rotation_in_degrees.map(degree => degree * (Math.PI / 180));
 
-  const obstrScale = 0.22;
+  const obstrScale = 0.27;
   const obstrRotationInDegrees = [-70, 0, 0];
   const obstrRadians = obstrRotationInDegrees.map(degree => degree * (Math.PI / 180));
 
@@ -270,7 +277,7 @@ function DishyModel() {
             />
             
             {/* Alternative: Spot light pointing upward (more focused) */}
-            <spotLight
+            {/* <spotLight
             position={[0, -3, 0]}
             target-position={[0, 10, 0]}
             intensity={10}
@@ -279,7 +286,7 @@ function DishyModel() {
             penumbra={0.3}
             distance={50}
             decay={0.5}
-            />
+            /> */}
         </group>
         )}
 
@@ -297,6 +304,7 @@ function DishyModel() {
 
 export default function ObstructionScreen({ navigation, route }: ObstructionScreenProps) {
   const [OrbitControls, events] = useControls();
+  const [forceRefresh, setForceRefresh] = useState(0);
 
   const handleGoBack = () => {
     navigation.goBack();
@@ -308,7 +316,15 @@ export default function ObstructionScreen({ navigation, route }: ObstructionScre
 
   useEffect(() => {
     console.log('🎯 Obstruction Screen loaded - showing latest generated model from local file');
-  }, []);
+    
+    // Force refresh when navigating to this screen
+    const unsubscribe = navigation.addListener('focus', () => {
+      console.log('🔄 Navigation focus detected - forcing asset refresh');
+      setForceRefresh(prev => prev + 1);
+    });
+    
+    return unsubscribe;
+  }, [navigation]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -341,7 +357,7 @@ export default function ObstructionScreen({ navigation, route }: ObstructionScre
             rotateSpeed={2}
             target={new Vector3(0, 0, 0)}
           />
-          <DishyModel />
+          <DishyModel forceRefresh={forceRefresh} />
         </Canvas>
       </View>
 
