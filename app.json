@@ -26,7 +26,12 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-asset"
+      [
+        "expo-asset",
+        {
+          "assets": ["./assets/3d/dishy.glb", "./assets/3d/G4_Standard_Open.glb"]
+        }
+      ]
     ]
   }
 }

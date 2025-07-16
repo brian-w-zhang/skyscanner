@@ -6,6 +6,7 @@ import CameraScreen from '../screens/CameraScreen';
 import CameraScreen2 from '../screens/CameraScreen2';
 import GalleryScreen from '../screens/GalleryScreen';
 import GalleryScreen2 from '../screens/GalleryScreen2';
+import ObstructionScreen from '../screens/ObstructionScreen';
 import { PhotoData } from '../utils/photoDataRecorder';
 
 // Define the parameter list for type safety
@@ -15,6 +16,7 @@ export type RootStackParamList = {
   CameraScreen2: undefined;
   GalleryScreen: { videoUri: string };
   GalleryScreen2: { photoUris: string[]; photoData: PhotoData[] };
+  ObstructionScreen: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -46,6 +48,11 @@ export default function AppNavigator() {
         <Stack.Screen 
           name="GalleryScreen2" 
           component={GalleryScreen2} 
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="ObstructionScreen" 
+          component={ObstructionScreen} 
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

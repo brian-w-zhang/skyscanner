@@ -61,7 +61,7 @@ export default function AccelerometerOverlay({ onScanStart }: AccelerometerOverl
     } else if (pitchDegrees <= YELLOW_THRESHOLD && rollDegrees <= YELLOW_THRESHOLD) {
       color = '#FFA500'; // Orange instead of yellow
       opacity = 0.8;
-      message = 'ADJUST ORIENTATION';
+      message = 'TILT UP SLIGHTLY';
       status = 'close';
     } else {
       color = '#FF4444'; // Softer red
@@ -104,8 +104,8 @@ export default function AccelerometerOverlay({ onScanStart }: AccelerometerOverl
           
           {/* Status text */}
           <Text style={[styles.statusText, { color: thresholdState.color }]}>
-            {thresholdState.status === 'perfect' ? 'OPTIMAL' : 
-             thresholdState.status === 'close' ? 'CLOSE' : 'ADJUST'}
+            {thresholdState.status === 'perfect' ? 'OPTIMAL POSITION' : 
+             thresholdState.status === 'close' ? 'ALMOST THERE' : 'NEEDS ADJUSTMENT'}
           </Text>
         </View>
       </View>

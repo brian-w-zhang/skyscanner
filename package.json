@@ -23,9 +23,11 @@
     "expo-file-system": "~18.1.11",
     "expo-gl": "^15.1.7",
     "expo-linear-gradient": "~14.1.5",
+    "expo-media-library": "~17.1.7",
     "expo-sensors": "~14.1.4",
     "expo-status-bar": "~2.2.3",
     "expo-video": "^2.2.2",
+    "r3f-native-orbitcontrols": "^1.0.12",
     "react": "19.0.0",
     "react-native": "0.79.5",
     "react-native-camera": "^4.2.1",
@@ -37,7 +39,7 @@
     "react-native-svg": "15.11.2",
     "react-native-vector-icons": "^10.2.0",
     "three": "^0.178.0",
-    "expo-media-library": "~17.1.7"
+    "three-stdlib": "^2.36.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

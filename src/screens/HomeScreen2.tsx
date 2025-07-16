@@ -38,6 +38,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             style={styles.button}
             icon="camera-outline"
           />
+          <BlurryButton
+            title="View Model"
+            onPress={() => navigation.navigate('ObstructionScreen')} // Navigate to the model screen
+            style={styles.button}
+            icon="cube-outline" // Example icon for the model
+          />
         </View>
       </View>
     </ImageBackground>
@@ -84,8 +90,10 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     paddingBottom: 15, // Raises button higher from bottom
+    gap: 5, // Space between buttons
   },
   button: {
     marginHorizontal: 0,
+    marginBottom: 10, // Space between buttons
   },
 });
