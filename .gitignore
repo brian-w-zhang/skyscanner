@@ -40,3 +40,6 @@ yarn-error.*
 venv
 
 .env
+
+# testing 
+src/new_testing/temp*

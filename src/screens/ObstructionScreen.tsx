@@ -108,7 +108,8 @@ function DishyModel({ forceRefresh }: { forceRefresh: number }) {
   }, [forceRefresh]);
   
   const [obstAssets] = useAssets(obstAssetArray);
-
+  const [retryCount, setRetryCount] = useState(0);
+  const [obstructionScene, setObstructionScene] = useState<THREE.Group | null>(null);
   const sceneRef = useRef<THREE.Group>(null);
   
   // Auto-rotate everything
@@ -117,6 +118,40 @@ function DishyModel({ forceRefresh }: { forceRefresh: number }) {
       sceneRef.current.rotation.y += delta * 0.6;
     }
   });
+  
+  // Retry logic for loading obstruction model
+  useEffect(() => {
+    if (!obstAssets || !obstAssets[0]) {
+      console.log('⏳ Assets not ready yet, will retry...');
+      return;
+    }
+
+    const loadObstructionModel = () => {
+      try {
+        const { scene: obstScene } = useGLTF(obstAssets[0].localUri || obstAssets[0].uri);
+        setObstructionScene(obstScene);
+        console.log('✅ Obstruction model loaded from local file (refresh:', forceRefresh, ', retry:', retryCount, ')');
+      } catch (error) {
+        const typedError = error as Error;
+        console.log('ℹ️ No obstruction model available yet:', typedError.message, '- Retry attempt:', retryCount);
+        
+        // Retry up to 3 times with a delay
+        if (retryCount < 3) {
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+          }, 100 * (retryCount + 1)); // Progressive delay: 100ms, 200ms, 300ms
+        }
+      }
+    };
+
+    loadObstructionModel();
+  }, [obstAssets, retryCount, forceRefresh]);
+
+  // Reset retry count when forceRefresh changes
+  useEffect(() => {
+    setRetryCount(0);
+    setObstructionScene(null);
+  }, [forceRefresh]);
   
   // Create the gradient shader material
   const gradientMaterial = useMemo(() => {
@@ -157,19 +192,6 @@ function DishyModel({ forceRefresh }: { forceRefresh: number }) {
   
   const { scene: dishScene } = useGLTF(dishAssets[0].localUri || dishAssets[0].uri);
 
-  // Load obstruction model if available
-  let obstructionScene = null;
-  if (obstAssets && obstAssets[0]) {
-    try {
-      const { scene: obstScene } = useGLTF(obstAssets[0].localUri || obstAssets[0].uri);
-      obstructionScene = obstScene;
-      console.log('✅ Obstruction model loaded from local file (refresh:', forceRefresh, ')');
-    } catch (error) {
-      const typedError = error as Error; // Explicitly cast to Error
-      console.log('ℹ️ No obstruction model available yet:', typedError.message);
-    }
-  }
-
   const scale = 0.018;
   const rotation_in_degrees = [21, 0, 0];
   const radians = rotation_in_degrees.map(degree => degree * (Math.PI / 180));
@@ -180,7 +202,7 @@ function DishyModel({ forceRefresh }: { forceRefresh: number }) {
 
   return (
     <group ref={sceneRef}>
-      {/* Key Light */}
+      {/* ... all your existing lights ... */}
       <directionalLight 
         position={[0, 25, 5]}
         intensity={3}
@@ -196,7 +218,6 @@ function DishyModel({ forceRefresh }: { forceRefresh: number }) {
         shadow-bias={-0.0001}
       />
 
-      {/* Fill Light */}
       <directionalLight 
         position={[-15, 12, 8]}
         intensity={0.7}
@@ -215,14 +236,12 @@ function DishyModel({ forceRefresh }: { forceRefresh: number }) {
         color="rgb(255, 255, 255)"
       />
 
-      {/* Rim Light */}
       <directionalLight 
         position={[12, 8, -10]}
         intensity={0.3}
         color="rgb(255, 255, 255)"
       />
 
-      {/* Ambient Light */}
       <ambientLight intensity={0.25} color="rgba(96, 96, 96, 1)" />
       
       {/* Ground Plane */}
@@ -237,58 +256,46 @@ function DishyModel({ forceRefresh }: { forceRefresh: number }) {
       </group>
 
       {/* Generated Obstruction Model - positioned above the dish */}
-        {obstructionScene && (
+      {obstructionScene && (
         <group position={[0, 0, 0]}>
-            <primitive 
+          <primitive 
             object={obstructionScene} 
             scale={[obstrScale, obstrScale, obstrScale]} 
             rotation={obstrRadians}
             onUpdate={(self: THREE.Object3D) => {
-                // Make all materials double-sided and semi-transparent
-                self.traverse((child: THREE.Object3D) => {
+              // Make all materials double-sided and semi-transparent
+              self.traverse((child: THREE.Object3D) => {
                 if ((child as THREE.Mesh).isMesh && (child as THREE.Mesh).material) {
-                    const materialOrArray = (child as THREE.Mesh).material;
+                  const materialOrArray = (child as THREE.Mesh).material;
 
-                    // Flatten nested arrays of materials
-                    const materials = Array.isArray(materialOrArray)
+                  // Flatten nested arrays of materials
+                  const materials = Array.isArray(materialOrArray)
                     ? materialOrArray.flat(Infinity) // Flatten deeply nested arrays
                     : [materialOrArray]; // Wrap single material in an array
 
-                    materials.forEach((material) => {
+                  materials.forEach((material) => {
                     if (material instanceof THREE.Material) {
-                        material.side = THREE.DoubleSide; // Render both front and back faces
-                        material.transparent = true;      // Enable transparency
-                        material.opacity = 0.6;          // Set opacity (60% visible)
-                        material.needsUpdate = true;     // Tell Three.js to update the material
+                      material.side = THREE.DoubleSide; // Render both front and back faces
+                      material.transparent = true;      // Enable transparency
+                      material.opacity = 0.6;          // Set opacity (60% visible)
+                      material.needsUpdate = true;     // Tell Three.js to update the material
                     }
-                    });
+                  });
                 }
-                });
+              });
             }}
-            />
-            
-            {/* UPWARD-POINTING LIGHT FOR DOME INTERIOR */}
-            <pointLight 
+          />
+          
+          {/* UPWARD-POINTING LIGHT FOR DOME INTERIOR */}
+          <pointLight 
             position={[0, -2, 0]} 
             intensity={8} 
             color="#ffffff" 
             distance={50}
             decay={0.5}
-            />
-            
-            {/* Alternative: Spot light pointing upward (more focused) */}
-            {/* <spotLight
-            position={[0, -3, 0]}
-            target-position={[0, 10, 0]}
-            intensity={10}
-            color="#ffffff"
-            angle={Math.PI / 3} // 60 degree cone
-            penumbra={0.3}
-            distance={50}
-            decay={0.5}
-            /> */}
+          />
         </group>
-        )}
+      )}
 
       {/* Dish Model */}
       <primitive 
