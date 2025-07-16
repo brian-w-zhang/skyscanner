@@ -6,6 +6,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from lab1 import process_single_photo
 from obstruction_mapper import ObstructionMapper
+import math
 
 def create_directory(dir_path: str) -> str:
     """Create directory if it doesn't exist."""

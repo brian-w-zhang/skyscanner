@@ -15,8 +15,16 @@ export type RootStackParamList = {
   CameraScreen: undefined;
   CameraScreen2: undefined;
   GalleryScreen: { videoUri: string };
-  GalleryScreen2: { photoUris: string[]; photoData: PhotoData[] };
-  ObstructionScreen: undefined;
+  GalleryScreen2: { 
+    photoUris: string[]; 
+    photoData: PhotoData[];
+    glbPath?: string;  // Local GLB file path
+    streamUrl?: string; // Stream URL for Three.js
+  };
+  ObstructionScreen: { 
+    glbPath?: string;
+    streamUrl?: string;
+  };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();

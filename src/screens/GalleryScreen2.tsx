@@ -10,6 +10,8 @@ interface GalleryScreen2Props {
     params: {
       photoUris: string[];
       photoData: PhotoData[];
+      glbPath?: string; // Add optional glbPath
+      streamUrl?: string; // Add optional streamUrl
     };
   };
 }
@@ -19,8 +21,15 @@ const photoSpacing = 6; // Gap between photos
 const photoSize = (width - 40 - (photoSpacing * 2)) / 3; // 3 photos per row with padding and gaps
 
 export default function GalleryScreen2({ navigation, route }: GalleryScreen2Props) {
-  const { photoUris, photoData } = route.params;
+  const { photoUris, photoData, glbPath, streamUrl } = route.params;
   const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
+
+  const handleViewModel = () => {
+    navigation.navigate('ObstructionScreen', { 
+      glbPath,
+      streamUrl 
+    });
+  };
 
   const handleSaveAllToGallery = async () => {
     try {
@@ -194,6 +203,20 @@ export default function GalleryScreen2({ navigation, route }: GalleryScreen2Prop
             {renderPhotoGrid()}
           </View>
         </ScrollView>
+
+        {/* GLB Status Panel */}
+        {(glbPath || streamUrl) && (
+          <View style={styles.glbStatusPanel}>
+            <View style={styles.glbStatusHeader}>
+              <Ionicons name="cube" size={20} color="#00D4FF" />
+              <Text style={styles.glbStatusTitle}>3D MODEL READY</Text>
+            </View>
+            <TouchableOpacity style={styles.viewModelButton} onPress={handleViewModel}>
+              <Text style={styles.viewModelButtonText}>VIEW MODEL</Text>
+              <Ionicons name="arrow-forward" size={16} color="white" />
+            </TouchableOpacity>
+          </View>
+        )}
         
         {renderOrientationPanel()}
       </View>
@@ -465,5 +488,42 @@ const styles = StyleSheet.create({
   orientationValueNoData: {
     color: '#8A8A8A', // Grey color similar to the icons
     opacity: 0.7,     // Slightly dimmed
+  },
+
+  glbStatusPanel: {
+    backgroundColor: 'rgba(0, 212, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 212, 255, 0.3)',
+    borderRadius: 8,
+    padding: 16,
+    marginHorizontal: 20,
+    marginVertical: 10,
+  },
+  glbStatusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  glbStatusTitle: {
+    color: '#00D4FF',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginLeft: 8,
+  },
+  viewModelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#00D4FF',
+    borderRadius: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  viewModelButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+    marginRight: 8,
   },
 });

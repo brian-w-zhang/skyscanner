@@ -29,7 +29,11 @@
       [
         "expo-asset",
         {
-          "assets": ["./assets/3d/dishy.glb", "./assets/3d/G4_Standard_Open.glb"]
+          "assets": [
+            "./assets/3d/dishy.glb",
+            "./assets/3d/G4_Standard_Open.glb",
+            "./src/new_testing/model/dome_sky_model.glb"
+          ]
         }
       ]
     ]

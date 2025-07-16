@@ -1,16 +1,21 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView } from 'react-native';
 import { Canvas, useFrame } from '@react-three/fiber/native';
 import { useGLTF } from '@react-three/drei/native';
 import useControls from 'r3f-native-orbitcontrols';
 import { Ionicons } from '@expo/vector-icons';
-import { GLTF } from 'three-stdlib';
 import { useAssets } from 'expo-asset';
 import { Vector3 } from 'three';
 import * as THREE from 'three';
 
 interface ObstructionScreenProps {
   navigation: any;
+  route?: {
+    params?: {
+      glbPath?: string;
+      streamUrl?: string;
+    };
+  };
 }
 
 function degreesToRadians(degrees: number): number {
@@ -20,9 +25,8 @@ function degreesToRadians(degrees: number): number {
 function CompassMarks() {
   const radius = 13;
   const tickLength = 0.4;
-  const labelDistance = 0.7; // Move dots inside the circle
+  const labelDistance = 0.7;
 
-  // Cardinal directions with their angles and labels
   const cardinalDirections = [
     { angle: 0, label: 'E' },
     { angle: 90, label: 'N' },
@@ -30,11 +34,9 @@ function CompassMarks() {
     { angle: 270, label: 'S' }
   ];
 
-  // Create tick marks for every 5 degrees, excluding cardinal directions and their neighbors
   const ticks = useMemo(() => {
     const ticksArray = [];
     for (let i = 0; i < 360; i += 4) {
-      // Remove the tick at the cardinal direction and its immediate neighbors (±5°)
       const isCardinalOrNeighbor = cardinalDirections.some(cardinal =>
         Math.abs(i - cardinal.angle) <= 5 ||
         Math.abs(i - cardinal.angle + 360) <= 5 ||
@@ -45,11 +47,8 @@ function CompassMarks() {
       const angle = degreesToRadians(i);
       const tickSize = tickLength;
 
-      // Start point (outer edge)
       const startX = Math.cos(angle) * radius;
       const startZ = Math.sin(angle) * radius;
-
-      // End point (inner)
       const endX = Math.cos(angle) * (radius - tickSize);
       const endZ = Math.sin(angle) * (radius - tickSize);
 
@@ -70,16 +69,13 @@ function CompassMarks() {
     return ticksArray;
   }, [radius, tickLength]);
 
-  // Create compass labels (dots) for cardinal directions, moved inside the circle
   const labels = useMemo(() => {
     const dotOffset = 0.5;
     return cardinalDirections.map(({ angle, label }) => {
       const radianAngle = degreesToRadians(angle);
-      // Move dot inside the circle
       const x = Math.cos(radianAngle) * (radius - labelDistance + dotOffset);
       const z = Math.sin(radianAngle) * (radius - labelDistance + dotOffset);
 
-      // North dot is red, others are white
       const color = label === 'N' ? 'red' : 'white';
 
       return (
@@ -101,17 +97,17 @@ function CompassMarks() {
   );
 }
 
-// Component to load and display the GLB file with auto-rotation
+// Component to load and display both GLB files with auto-rotation
 function DishyModel() {
-  const [assets] = useAssets([require('../../assets/3d/dishy.glb')]);  
+  const [dishAssets] = useAssets([require('../../assets/3d/dishy.glb')]);
+//   const [obstAssets] = useAssets([require('../new_testing/model/dome_sky_model.glb')]);
+  const [obstAssets] = useAssets([require('./dome_sky_model.glb')]);
   const sceneRef = useRef<THREE.Group>(null);
   
   // Auto-rotate everything
   useFrame((state, delta) => {
     if (sceneRef.current) {
-      // Rotate around z-axis at a constant speed
-      // Adjust the speed by changing the multiplier (0.5 for slower, 2 for faster)
-      sceneRef.current.rotation.y += delta * 0.8; // 1 radian per second
+      sceneRef.current.rotation.y += delta * 0.6;
     }
   });
   
@@ -119,8 +115,8 @@ function DishyModel() {
   const gradientMaterial = useMemo(() => {
     return new THREE.ShaderMaterial({
       uniforms: {
-        centerColor: { value: new THREE.Color(0x737373) }, // Much lighter grey center
-        edgeColor: { value: new THREE.Color(0x0a2a2e) },   // Dark edge but not pure black
+        centerColor: { value: new THREE.Color(0x737373) },
+        edgeColor: { value: new THREE.Color(0x0a2a2e) },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -137,16 +133,10 @@ function DishyModel() {
         varying vec2 vUv;
         
         void main() {
-          // Calculate distance from center (0.5, 0.5)
           float dist = distance(vUv, vec2(0.5, 0.5));
-          
-          // Apply a power curve to make the gradient more pronounced
-          dist = pow(dist * 1.814, 1.2); // 1.414 normalizes diagonal distance, power makes it more dramatic
+          dist = pow(dist * 1.814, 1.2);
           dist = clamp(dist, 0.0, 1.0);
-          
-          // Mix colors based on distance
           vec3 color = mix(centerColor, edgeColor, dist);
-          
           gl_FragColor = vec4(color, 1.0);
         }
       `,
@@ -154,19 +144,36 @@ function DishyModel() {
     });
   }, []);
   
-  if (!assets) {
+  if (!dishAssets) {
     return null;
   }
   
-  const { scene } = useGLTF(assets[0].localUri || assets[0].uri);
+  const { scene: dishScene } = useGLTF(dishAssets[0].localUri || dishAssets[0].uri);
 
-  const scale = 0.018; // Adjust scale as needed
-  const rotation_in_degrees = [21, 0, 0]; // Adjust rotation as needed
+  // Load obstruction model if available
+  let obstructionScene = null;
+  if (obstAssets && obstAssets[0]) {
+    try {
+      const { scene: obstScene } = useGLTF(obstAssets[0].localUri || obstAssets[0].uri);
+      obstructionScene = obstScene;
+      console.log('✅ Obstruction model loaded from local file');
+    } catch (error) {
+      const typedError = error as Error; // Explicitly cast to Error
+      console.log('ℹ️ No obstruction model available yet:', typedError.message);
+    }
+  }
+
+  const scale = 0.018;
+  const rotation_in_degrees = [21, 0, 0];
   const radians = rotation_in_degrees.map(degree => degree * (Math.PI / 180));
+
+  const obstrScale = 0.22;
+  const obstrRotationInDegrees = [-70, 0, 0];
+  const obstrRadians = obstrRotationInDegrees.map(degree => degree * (Math.PI / 180));
 
   return (
     <group ref={sceneRef}>
-      {/* Key Light - Main shadow-casting light positioned above the dish */}
+      {/* Key Light */}
       <directionalLight 
         position={[0, 25, 5]}
         intensity={3}
@@ -182,7 +189,7 @@ function DishyModel() {
         shadow-bias={-0.0001}
       />
 
-      {/* Fill Light - Softer light to reduce harsh shadows */}
+      {/* Fill Light */}
       <directionalLight 
         position={[-15, 12, 8]}
         intensity={0.7}
@@ -201,20 +208,20 @@ function DishyModel() {
         color="rgb(255, 255, 255)"
       />
 
-      {/* Rim Light - Creates edge definition */}
+      {/* Rim Light */}
       <directionalLight 
         position={[12, 8, -10]}
         intensity={0.3}
         color="rgb(255, 255, 255)"
       />
 
-      {/* Ambient Light - Subtle overall illumination */}
+      {/* Ambient Light */}
       <ambientLight intensity={0.25} color="rgba(96, 96, 96, 1)" />
       
-      {/* Ground Plane - Single mesh with gradient shader */}
+      {/* Ground Plane */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]} receiveShadow>
         <circleGeometry args={[13, 64]} />
-        <primitive object={gradientMaterial} />
+        <primitive object={gradientMaterial} receiveShadow />
       </mesh>
 
       {/* Compass marks and labels */}
@@ -222,9 +229,63 @@ function DishyModel() {
         <CompassMarks />
       </group>
 
-      {/* 3D Model */}
+      {/* Generated Obstruction Model - positioned above the dish */}
+        {obstructionScene && (
+        <group position={[0, 0, 0]}>
+            <primitive 
+            object={obstructionScene} 
+            scale={[obstrScale, obstrScale, obstrScale]} 
+            rotation={obstrRadians}
+            onUpdate={(self: THREE.Object3D) => {
+                // Make all materials double-sided and semi-transparent
+                self.traverse((child: THREE.Object3D) => {
+                if ((child as THREE.Mesh).isMesh && (child as THREE.Mesh).material) {
+                    const materialOrArray = (child as THREE.Mesh).material;
+
+                    // Flatten nested arrays of materials
+                    const materials = Array.isArray(materialOrArray)
+                    ? materialOrArray.flat(Infinity) // Flatten deeply nested arrays
+                    : [materialOrArray]; // Wrap single material in an array
+
+                    materials.forEach((material) => {
+                    if (material instanceof THREE.Material) {
+                        material.side = THREE.DoubleSide; // Render both front and back faces
+                        material.transparent = true;      // Enable transparency
+                        material.opacity = 0.6;          // Set opacity (60% visible)
+                        material.needsUpdate = true;     // Tell Three.js to update the material
+                    }
+                    });
+                }
+                });
+            }}
+            />
+            
+            {/* UPWARD-POINTING LIGHT FOR DOME INTERIOR */}
+            <pointLight 
+            position={[0, -2, 0]} 
+            intensity={8} 
+            color="#ffffff" 
+            distance={50}
+            decay={0.5}
+            />
+            
+            {/* Alternative: Spot light pointing upward (more focused) */}
+            <spotLight
+            position={[0, -3, 0]}
+            target-position={[0, 10, 0]}
+            intensity={10}
+            color="#ffffff"
+            angle={Math.PI / 3} // 60 degree cone
+            penumbra={0.3}
+            distance={50}
+            decay={0.5}
+            />
+        </group>
+        )}
+
+      {/* Dish Model */}
       <primitive 
-        object={scene} 
+        object={dishScene} 
         scale={[scale, scale, scale]} 
         rotation={radians} 
         castShadow 
@@ -234,16 +295,20 @@ function DishyModel() {
   );
 }
 
-export default function ObstructionScreen({ navigation }: ObstructionScreenProps) {
+export default function ObstructionScreen({ navigation, route }: ObstructionScreenProps) {
   const [OrbitControls, events] = useControls();
 
   const handleGoBack = () => {
     navigation.goBack();
   };
 
-  const minPolarAngleInDegrees = 0; // Set the minimum polar angle in degrees
-  const minPolarAngle = degreesToRadians(minPolarAngleInDegrees); // Convert to radians
-  const maxPolarAngle = degreesToRadians(minPolarAngleInDegrees + 90); // Add 90 degrees and convert to radians
+  const minPolarAngleInDegrees = 0;
+  const minPolarAngle = degreesToRadians(minPolarAngleInDegrees);
+  const maxPolarAngle = degreesToRadians(minPolarAngleInDegrees + 90);
+
+  useEffect(() => {
+    console.log('🎯 Obstruction Screen loaded - showing latest generated model from local file');
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -261,20 +326,20 @@ export default function ObstructionScreen({ navigation }: ObstructionScreenProps
         <Canvas
           shadows
           camera={{
-            position: [-10, -50, 10],
+            position: [-10, -52, 10],
             fov: 50,
-            near: 0.1,
+            near: 0.01,
             far: 1000,
           }}
         >
           <OrbitControls 
-            enablePan={false}
-            enableZoom={false}
+            enablePan={true}
+            enableZoom={true}
             enableRotate={true}
             minPolarAngle={minPolarAngle}
             maxPolarAngle={maxPolarAngle}
             rotateSpeed={2}
-            target={new Vector3(0, 0, 0)}  // Focus on the center of the model
+            target={new Vector3(0, 0, 0)}
           />
           <DishyModel />
         </Canvas>
@@ -283,7 +348,7 @@ export default function ObstructionScreen({ navigation }: ObstructionScreenProps
       {/* Instructions */}
       <View style={styles.instructionsContainer}>
         <Text style={styles.instructionsText}>
-          Drag to rotate • Pinch to zoom • Two fingers to pan
+          Drag to rotate • Showing latest obstruction scan
         </Text>
       </View>
     </SafeAreaView>

@@ -359,8 +359,9 @@ class ObstructionMapper:
         )
         
         # Save as PLY file
-        output_path = os.path.join(output_dir, "dome_sky_model.ply")
-        mesh.export(output_path)
+        output_path = os.path.join(output_dir, "dome_sky_model.glb")
+        with open(output_path, "wb") as f:
+            f.write(mesh.export(file_type="glb"))
         
         print(f"🎨 3D dome model saved: {output_path} (all colors with 50% transparency)")
         return output_path

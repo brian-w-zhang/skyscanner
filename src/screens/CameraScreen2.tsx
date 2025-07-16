@@ -10,6 +10,10 @@ import { OrientationTracker, Orientation } from '../utils/orientationTracker';
 import { ScanTracker, ScanCoverage } from '../utils/scanTracker';
 import { PhotoDataRecorder, PhotoData } from '../utils/photoDataRecorder';
 import { ActivityIndicator } from 'react-native';
+import { FlaskService, FlaskResponse } from '../utils/flaskService';
+import * as FileSystem from 'expo-file-system';
+// import { FLASK_SERVER_URL } from '@env';
+
 
 interface CameraScreen2Props {
   navigation: any;
@@ -25,7 +29,8 @@ export default function CameraScreen2({ navigation }: CameraScreen2Props) {
   const [scanCoverage, setScanCoverage] = useState<ScanCoverage>({ totalCoverage: 0, scannedPoints: [] });
   const [photoCount, setPhotoCount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false); // New state for processing
-  
+  const [processingStatus, setProcessingStatus] = useState<string>('');
+
   const orientationTracker = useRef<OrientationTracker | null>(null);
   const scanTracker = useRef<ScanTracker | null>(null);
   const photoRecorder = useRef<PhotoDataRecorder | null>(null);
@@ -42,6 +47,8 @@ export default function CameraScreen2({ navigation }: CameraScreen2Props) {
   const handleOrientationChangeRef = useRef<(orientation: Orientation) => void>(() => {});
   const handleScanCoverageChangeRef = useRef<(coverage: ScanCoverage) => void>(() => {});
 
+  const flaskService = useRef<FlaskService>(new FlaskService('http://192.168.1.103:5002'));
+  
   const handleOrientationChange = useCallback((newOrientation: Orientation) => {
     setOrientation(newOrientation);
     // Update the ref so it's always current
@@ -216,6 +223,29 @@ export default function CameraScreen2({ navigation }: CameraScreen2Props) {
     await startPhotoCapture();
   }, [startPhotoCapture]);
 
+  // old version pre flask integration
+  // const handleScanStop = useCallback(async () => {
+  //   // Prevent multiple calls
+  //   if (!isScanning || !isMountedRef.current || isProcessing) {
+  //     console.log('⚠️ handleScanStop called but not scanning or unmounted or already processing, ignoring...');
+  //     return;
+  //   }
+
+  //   console.log('🛑 handleScanStop starting...');
+    
+  //   // Show processing loader immediately
+  //   setIsProcessing(true);
+    
+  //   // Update the React state after stopping the recorder
+  //   setIsScanning(false);
+  //   setIsSkyDomeLoaded(false);
+    
+  //   // Stop photo capture
+  //   await stopPhotoCapture();
+    
+  //   console.log('🛑 handleScanStop completed');
+  // }, [isScanning, stopPhotoCapture, isProcessing]);
+
   const handleScanStop = useCallback(async () => {
     // Prevent multiple calls
     if (!isScanning || !isMountedRef.current || isProcessing) {
@@ -227,16 +257,91 @@ export default function CameraScreen2({ navigation }: CameraScreen2Props) {
     
     // Show processing loader immediately
     setIsProcessing(true);
+    setProcessingStatus('Stopping photo capture...');
     
     // Update the React state after stopping the recorder
     setIsScanning(false);
     setIsSkyDomeLoaded(false);
     
-    // Stop photo capture
-    await stopPhotoCapture();
+    // Stop photo capture and get data
+    setProcessingStatus('Processing photos...');
+    
+    // Stop the photo interval immediately
+    if (photoIntervalRef.current) {
+      clearInterval(photoIntervalRef.current);
+      photoIntervalRef.current = null;
+    }
+
+    // Wait for any ongoing photo capture to complete
+    let tries = 0;
+    while (
+      isCapturingRef.current ||
+      (photoRecorder.current &&
+        photoUrisRef.current.length > photoRecorder.current.getCurrentPhotoCount() &&
+        tries < 20)
+    ) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      tries++;
+    }
+
+    // Stop photo data recording and get data
+    let photoData: PhotoData[] = [];
+    if (photoRecorder.current) {
+      photoData = photoRecorder.current.stopRecording();
+    }
+
+    console.log('📊 Photo data for Flask processing:', JSON.stringify(photoData, null, 2));
+    
+    // Process photos with Flask
+    setProcessingStatus('Uploading to server...');
+    
+    try {
+      // Check Flask server health first
+      const isHealthy = await flaskService.current.healthCheck();
+      if (!isHealthy) {
+        throw new Error('Flask server is not responding. Make sure it\'s running.');
+      }
+
+      setProcessingStatus('Generating 3D model...');
+      
+      const result: FlaskResponse = await flaskService.current.generateGLB(
+        photoUrisRef.current,
+        photoData
+      );
+
+      if (result.success && result.download_url && result.session_id) {
+        console.log('✅ GLB model generated successfully!');
+        console.log('🆔 Session ID:', result.session_id);
+        
+        // No need to download - just navigate with stream URL
+        navigation.replace('GalleryScreen2', { 
+          photoUris: photoUrisRef.current,
+          photoData: photoData,
+          streamUrl: flaskService.current.getStreamUrl(result.session_id)
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ Flask processing error:', error);
+      
+      // Show error to user
+      setProcessingStatus('Error: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      
+      // Wait a bit then navigate to gallery anyway
+      setTimeout(() => {
+        navigation.replace('GalleryScreen2', { 
+          photoUris: photoUrisRef.current,
+          photoData: photoData
+        });
+      }, 2000);
+      
+    } finally {
+      setIsProcessing(false);
+      setProcessingStatus('');
+    }
     
     console.log('🛑 handleScanStop completed');
-  }, [isScanning, stopPhotoCapture, isProcessing]);
+  }, [isScanning, isProcessing, navigation]);
 
   // Track component mount status
   useEffect(() => {
