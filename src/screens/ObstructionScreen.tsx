@@ -17,35 +17,50 @@ function degreesToRadians(degrees: number): number {
   return degrees * (Math.PI / 180);
 }
 
-// Component for compass marks and labels
+
 function CompassMarks() {
   const radius = 13;
   const tickLength = 0.4;
-  const labelDistance = 1.2;
-  
-  // Create tick marks for every 15 degrees
+  const labelDistance = 0.7; // Move dots inside the circle
+
+  // Cardinal directions with their angles and labels
+  const cardinalDirections = [
+    { angle: 0, label: 'E' },
+    { angle: 90, label: 'N' },
+    { angle: 180, label: 'W' },
+    { angle: 270, label: 'S' }
+  ];
+
+  // Create tick marks for every 5 degrees, excluding cardinal directions and their neighbors
   const ticks = useMemo(() => {
     const ticksArray = [];
-    for (let i = 0; i < 360; i += 5) {
+    for (let i = 0; i < 360; i += 4) {
+      // Remove the tick at the cardinal direction and its immediate neighbors (±5°)
+      const isCardinalOrNeighbor = cardinalDirections.some(cardinal =>
+        Math.abs(i - cardinal.angle) <= 5 ||
+        Math.abs(i - cardinal.angle + 360) <= 5 ||
+        Math.abs(i - cardinal.angle - 360) <= 5
+      );
+      if (isCardinalOrNeighbor) continue;
+
       const angle = degreesToRadians(i);
-      const isCardinal = i % 90 === 0;
-      const tickSize = isCardinal ? tickLength * 2 : tickLength;
-      
+      const tickSize = tickLength;
+
       // Start point (outer edge)
       const startX = Math.cos(angle) * radius;
       const startZ = Math.sin(angle) * radius;
-      
+
       // End point (inner)
       const endX = Math.cos(angle) * (radius - tickSize);
       const endZ = Math.sin(angle) * (radius - tickSize);
-      
+
       const geometry = new THREE.BufferGeometry();
       const positions = new Float32Array([
         startX, 0, startZ,
         endX, 0, endZ
       ]);
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      
+
       ticksArray.push(
         <line key={i}>
           <primitive object={geometry} />
@@ -55,34 +70,30 @@ function CompassMarks() {
     }
     return ticksArray;
   }, [radius, tickLength]);
-  
-  // Create compass labels using simple geometry
+
+  // Create compass labels (dots) for cardinal directions, moved inside the circle
   const labels = useMemo(() => {
-    const directions = [
-      { angle: 0, label: 'E', x: radius + labelDistance, z: 0 },
-      { angle: 90, label: 'N', x: 0, z: radius + labelDistance },
-      { angle: 180, label: 'W', x: -(radius + labelDistance), z: 0 },
-      { angle: 270, label: 'S', x: 0, z: -(radius + labelDistance) }
-    ];
-    
-    return directions.map(({ angle, label, x, z }) => {
+    const dotOffset = 0.5;
+    return cardinalDirections.map(({ angle, label }) => {
+      const radianAngle = degreesToRadians(angle);
+      // Move dot inside the circle
+      const x = Math.cos(radianAngle) * (radius - labelDistance + dotOffset);
+      const z = Math.sin(radianAngle) * (radius - labelDistance + dotOffset);
+
+      // North dot is red, others are white
+      const color = label === 'N' ? 'red' : 'white';
+
       return (
         <group key={label} position={[x, 0.1, z]}>
-          {/* Create a simple white circle to represent the direction marker */}
           <mesh rotation={[-Math.PI / 2, 0, 0]}>
-            <circleGeometry args={[0.3, 8]} />
-            <meshBasicMaterial color="white" />
-          </mesh>
-          {/* Add a larger circle outline for better visibility */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[0.35, 0.4, 8]} />
-            <meshBasicMaterial color="white" />
+            <circleGeometry args={[0.4, 26]} />
+            <meshBasicMaterial color={color} />
           </mesh>
         </group>
       );
     });
   }, [radius, labelDistance]);
-  
+
   return (
     <group>
       {ticks}
