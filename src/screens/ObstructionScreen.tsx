@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView } from 'react-native';
-import { Canvas } from '@react-three/fiber/native';
+import { Canvas, useFrame } from '@react-three/fiber/native';
 import { useGLTF } from '@react-three/drei/native';
 import useControls from 'r3f-native-orbitcontrols';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +16,6 @@ interface ObstructionScreenProps {
 function degreesToRadians(degrees: number): number {
   return degrees * (Math.PI / 180);
 }
-
 
 function CompassMarks() {
   const radius = 13;
@@ -102,9 +101,19 @@ function CompassMarks() {
   );
 }
 
-// Component to load and display the GLB file
+// Component to load and display the GLB file with auto-rotation
 function DishyModel() {
   const [assets] = useAssets([require('../../assets/3d/dishy.glb')]);  
+  const sceneRef = useRef<THREE.Group>(null);
+  
+  // Auto-rotate everything
+  useFrame((state, delta) => {
+    if (sceneRef.current) {
+      // Rotate around z-axis at a constant speed
+      // Adjust the speed by changing the multiplier (0.5 for slower, 2 for faster)
+      sceneRef.current.rotation.y += delta * 0.8; // 1 radian per second
+    }
+  });
   
   // Create the gradient shader material
   const gradientMaterial = useMemo(() => {
@@ -149,14 +158,14 @@ function DishyModel() {
     return null;
   }
   
-  const { scene } = useGLTF(assets[0].localUri || assets[0].uri) as GLTF;
+  const { scene } = useGLTF(assets[0].localUri || assets[0].uri);
 
   const scale = 0.018; // Adjust scale as needed
   const rotation_in_degrees = [21, 0, 0]; // Adjust rotation as needed
   const radians = rotation_in_degrees.map(degree => degree * (Math.PI / 180));
 
   return (
-    <>
+    <group ref={sceneRef}>
       {/* Key Light - Main shadow-casting light positioned above the dish */}
       <directionalLight 
         position={[0, 25, 5]}
@@ -214,8 +223,14 @@ function DishyModel() {
       </group>
 
       {/* 3D Model */}
-      <primitive object={scene} scale={[scale, scale, scale]} rotation={radians} castShadow receiveShadow />
-    </>
+      <primitive 
+        object={scene} 
+        scale={[scale, scale, scale]} 
+        rotation={radians} 
+        castShadow 
+        receiveShadow 
+      />
+    </group>
   );
 }
 
