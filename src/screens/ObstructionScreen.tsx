@@ -333,8 +333,8 @@ export default function ObstructionScreen({ navigation, route }: ObstructionScre
           }}
         >
           <OrbitControls 
-            enablePan={true}
-            enableZoom={true}
+            enablePan={false}
+            enableZoom={false}
             enableRotate={true}
             minPolarAngle={minPolarAngle}
             maxPolarAngle={maxPolarAngle}
