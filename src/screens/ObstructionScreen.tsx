@@ -411,11 +411,11 @@ const styles = StyleSheet.create({
     borderBottomColor: '#1A1A1A',
   },
   backButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 8,
+    // backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    // borderRadius: 8,
     padding: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
+    // borderWidth: 1,
+    // borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   headerTitle: {
     color: 'white',

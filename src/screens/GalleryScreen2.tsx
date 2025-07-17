@@ -212,7 +212,7 @@ export default function GalleryScreen2({ navigation, route }: GalleryScreen2Prop
               <Text style={styles.glbStatusTitle}>3D MODEL READY</Text>
             </View>
             <TouchableOpacity style={styles.viewModelButton} onPress={handleViewModel}>
-              <Text style={styles.viewModelButtonText}>VIEW MODEL</Text>
+              <Text style={styles.viewModelButtonText}>VIEW OBSTRUCTIONS</Text>
               <Ionicons name="arrow-forward" size={16} color="white" />
             </TouchableOpacity>
           </View>
@@ -247,11 +247,11 @@ const styles = StyleSheet.create({
     borderBottomColor: '#1A1A1A',
   },
   headerButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 8,
+    // backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    // borderRadius: 8,
     padding: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
+    // borderWidth: 1,
+    // borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   headerTitleContainer: {
     alignItems: 'center',
