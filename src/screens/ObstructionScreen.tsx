@@ -369,11 +369,28 @@ export default function ObstructionScreen({ navigation, route }: ObstructionScre
       </View>
 
       {/* Instructions */}
-      <View style={styles.instructionsContainer}>
+        <View style={styles.instructionsContainer}>
+        {/* Legend */}
+        <View style={styles.legendContainer}>
+            <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: 'grey' }]} />
+            <Text style={styles.legendText}>No Data</Text>
+            </View>
+            <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: 'rgba(34, 70, 228, 1)' }]} />
+            <Text style={styles.legendText}>Clear View</Text>
+            </View>
+            <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: 'rgba(203, 35, 35, 1)' }]} />
+            <Text style={styles.legendText}>Obstructions</Text>
+            </View>
+        </View>
+
+        {/* Instructions Text */}
         <Text style={styles.instructionsText}>
-          Drag to rotate • Showing latest obstruction scan
+            Drag to rotate • Showing latest obstruction scan
         </Text>
-      </View>
+        </View>
     </SafeAreaView>
   );
 }
@@ -425,5 +442,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
     letterSpacing: 0.5,
+  },
+  legendContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center', // Center the items instead of spreading them out
+    alignItems: 'center',
+    marginBottom: 15, // Add some spacing above the instructions text
+    gap: 40, // Add spacing between the items
+    },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 10, // Space between the dot and the text
+  },
+  legendText: {
+    color: '#fefefeff',
+    fontSize: 12,
+    fontWeight: '500',
   },
 });
