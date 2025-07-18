@@ -218,6 +218,8 @@ function DishyModel({ forceRefresh, showStars, backgroundRetry, setBackgroundRet
     }
     }
 
+  const scaleMultiplier = 0.9;
+  
   const scale = 0.018;
   const rotation_in_degrees = [21, 0, 0];
   const radians = rotation_in_degrees.map(degree => degree * (Math.PI / 180));
@@ -226,7 +228,7 @@ function DishyModel({ forceRefresh, showStars, backgroundRetry, setBackgroundRet
   const obstrRotationInDegrees = [-70, 0, 0];
   const obstrRadians = obstrRotationInDegrees.map(degree => degree * (Math.PI / 180));
 
-  const starScale = 0.9;
+  const starScale = 1.2;
 
   return (
     <group ref={sceneRef}>
@@ -399,16 +401,16 @@ export default function ObstructionScreen({ navigation, route }: ObstructionScre
           <Ionicons name="chevron-back" size={24} color="white" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Obstructions</Text>
-        {/* Star Toggle Button */}
+        {/* Globe Toggle Button */}
         <TouchableOpacity 
-        style={[styles.starButton, showStars && styles.starButtonActive]} 
-        onPress={toggleStars}
+          style={[styles.starButton, showStars && styles.starButtonActive]} 
+          onPress={toggleStars}
         >
-        <Ionicons 
-            name={showStars ? "earth" : "earth-outline"} // Use filled globe when active, outline when inactive
+          <Ionicons 
+            name={showStars ? "earth" : "earth-outline"} 
             size={20} 
             color={showStars ? "white" : "#666666"} 
-        />
+          />
         </TouchableOpacity>
       </View>
 
@@ -417,7 +419,7 @@ export default function ObstructionScreen({ navigation, route }: ObstructionScre
         <Canvas
           shadows
           camera={{
-            position: [-10, -52, 10],
+            position: [-10, -72, 10],
             fov: 50,
             near: 0.01,
             far: 1000,
@@ -432,38 +434,38 @@ export default function ObstructionScreen({ navigation, route }: ObstructionScre
             rotateSpeed={2}
             target={new Vector3(0, 0, 0)}
           />
-        <DishyModel 
-        forceRefresh={forceRefresh} 
-        showStars={showStars} 
-        backgroundRetry={backgroundRetry}
-        setBackgroundRetry={setBackgroundRetry}
-        />
+          <DishyModel 
+            forceRefresh={forceRefresh} 
+            showStars={showStars} 
+            backgroundRetry={backgroundRetry}
+            setBackgroundRetry={setBackgroundRetry}
+          />
         </Canvas>
       </View>
 
       {/* Instructions */}
-        <View style={styles.instructionsContainer}>
+      <View style={styles.instructionsContainer}>
         {/* Legend */}
         <View style={styles.legendContainer}>
-            <View style={styles.legendItem}>
+          <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: 'grey' }]} />
             <Text style={styles.legendText}>No Data</Text>
-            </View>
-            <View style={styles.legendItem}>
+          </View>
+          <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: 'rgba(34, 70, 228, 1)' }]} />
             <Text style={styles.legendText}>Clear View</Text>
-            </View>
-            <View style={styles.legendItem}>
+          </View>
+          <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: 'rgba(203, 35, 35, 1)' }]} />
             <Text style={styles.legendText}>Obstructions</Text>
-            </View>
+          </View>
         </View>
 
         {/* Instructions Text */}
         <Text style={styles.instructionsText}>
-            Drag to rotate • Showing latest obstruction scan
+          Drag to rotate • Showing latest obstruction scan
         </Text>
-        </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -474,21 +476,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end', // Align content to bottom of header
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#000000',
+    paddingTop: 50, // Add extra padding at top for safe area
+    paddingBottom: 15, // Keep existing bottom padding
+    backgroundColor: 'rgba(0, 0, 0, 0.7)', // Semi-transparent black
     borderBottomWidth: 1,
     borderBottomColor: '#1A1A1A',
+    zIndex: 1, // Ensure it stays above the Canvas
   },
   backButton: {
-    // backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    // borderRadius: 8,
     padding: 8,
-    // borderWidth: 1,
-    // borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   headerTitle: {
     color: 'white',
@@ -496,18 +500,25 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1,
   },
-  headerSpacer: {
-    width: 40,
-  },
   modelContainer: {
-    flex: 1,
-    backgroundColor: '#0A0A0A',
+    position: 'absolute', // Make it fill the entire screen
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: -1, // Ensure it appears behind other components
   },
   instructionsContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     padding: 20,
-    backgroundColor: '#000000',
+    paddingBottom: 40, // Add extra padding at bottom for safe area
+    backgroundColor: 'rgba(0, 0, 0, 0.7)', // Semi-transparent black
     borderTopWidth: 1,
     borderTopColor: '#1A1A1A',
+    zIndex: 1, // Ensure it stays above the Canvas
   },
   instructionsText: {
     color: '#8A8A8A',
@@ -518,11 +529,11 @@ const styles = StyleSheet.create({
   },
   legendContainer: {
     flexDirection: 'row',
-    justifyContent: 'center', // Center the items instead of spreading them out
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 15, // Add some spacing above the instructions text
-    gap: 40, // Add spacing between the items
-    },
+    marginBottom: 15,
+    gap: 40,
+  },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -531,7 +542,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    marginRight: 10, // Space between the dot and the text
+    marginRight: 10,
   },
   legendText: {
     color: '#fefefeff',
@@ -541,13 +552,8 @@ const styles = StyleSheet.create({
   starButton: {
     padding: 8,
     borderRadius: 6,
-    // backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    // borderWidth: 1,
-    // borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   starButtonActive: {
-    // backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    // borderColor: 'rgba(255, 255, 255, 0.3)',
     shadowColor: 'white',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
