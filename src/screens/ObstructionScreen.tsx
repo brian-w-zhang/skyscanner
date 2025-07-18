@@ -401,14 +401,14 @@ export default function ObstructionScreen({ navigation, route }: ObstructionScre
         <Text style={styles.headerTitle}>Obstructions</Text>
         {/* Star Toggle Button */}
         <TouchableOpacity 
-          style={[styles.starButton, showStars && styles.starButtonActive]} 
-          onPress={toggleStars}
+        style={[styles.starButton, showStars && styles.starButtonActive]} 
+        onPress={toggleStars}
         >
-          <Ionicons 
-            name="star" 
+        <Ionicons 
+            name={showStars ? "earth" : "earth-outline"} // Use filled globe when active, outline when inactive
             size={20} 
             color={showStars ? "white" : "#666666"} 
-          />
+        />
         </TouchableOpacity>
       </View>
 
