@@ -98,7 +98,12 @@ function CompassMarks() {
 }
 
 // Component to load and display both GLB files with auto-rotation
-function DishyModel({ forceRefresh }: { forceRefresh: number }) {
+function DishyModel({ forceRefresh, showStars, backgroundRetry, setBackgroundRetry }: { 
+  forceRefresh: number; 
+  showStars: boolean; 
+  backgroundRetry: number;
+  setBackgroundRetry: (value: number | ((prev: number) => number)) => void;
+}) {
   const [dishAssets] = useAssets([require('../../assets/3d/dishy.glb')]);
   
   // Force re-evaluation by creating a new array reference when forceRefresh changes
@@ -111,6 +116,8 @@ function DishyModel({ forceRefresh }: { forceRefresh: number }) {
   const [retryCount, setRetryCount] = useState(0);
   const [obstructionScene, setObstructionScene] = useState<THREE.Group | null>(null);
   const sceneRef = useRef<THREE.Group>(null);
+
+  const [backgroundAssets] = useAssets([require('../../assets/3d/earth.glb')]); // Load the background sphere
   
   // Auto-rotate everything
   useFrame((state, delta) => {
@@ -186,11 +193,30 @@ function DishyModel({ forceRefresh }: { forceRefresh: number }) {
     });
   }, []);
   
-  if (!dishAssets) {
+  if (!dishAssets || !backgroundAssets) {
     return null;
   }
   
   const { scene: dishScene } = useGLTF(dishAssets[0].localUri || dishAssets[0].uri);
+  
+  // Only load background scene if showStars is true
+  let backgroundScene = null;
+    if (showStars && backgroundAssets && backgroundAssets[0]) {
+    try {
+        const result = useGLTF(backgroundAssets[0].localUri || backgroundAssets[0].uri);
+        backgroundScene = result.scene;
+        // Reset retry if successful
+        if (backgroundRetry !== 0) setBackgroundRetry(0);
+        console.log('✅ Background scene loaded successfully');
+    } catch (error) {
+        console.log('⚠️ Background scene failed to load, will retry:', error);
+        backgroundScene = null;
+        // Retry after a short delay, but only if not already retrying
+        if (backgroundRetry < 3) {
+        setTimeout(() => setBackgroundRetry(backgroundRetry + 1), 200);
+        }
+    }
+    }
 
   const scale = 0.018;
   const rotation_in_degrees = [21, 0, 0];
@@ -200,9 +226,32 @@ function DishyModel({ forceRefresh }: { forceRefresh: number }) {
   const obstrRotationInDegrees = [-70, 0, 0];
   const obstrRadians = obstrRotationInDegrees.map(degree => degree * (Math.PI / 180));
 
+  const starScale = 0.9;
+
   return (
     <group ref={sceneRef}>
-      {/* ... all your existing lights ... */}
+      {/* Background Sphere - Only show when showStars is true */}
+      {showStars && (
+        <group position={[0, 0, 0]}>
+          {backgroundScene ? (
+            <primitive 
+              object={backgroundScene} 
+              scale={[starScale, starScale, starScale]} 
+              rotation={[0, 0, 0]} 
+            />
+          ) : (
+            // Fallback background sphere
+            <mesh>
+              <sphereGeometry args={[50, 32, 32]} />
+              <meshBasicMaterial 
+                color="#001122" 
+                side={THREE.BackSide} // Render from inside
+              />
+            </mesh>
+          )}
+        </group>
+      )}
+      
       <directionalLight 
         position={[0, 25, 5]}
         intensity={3}
@@ -312,9 +361,18 @@ function DishyModel({ forceRefresh }: { forceRefresh: number }) {
 export default function ObstructionScreen({ navigation, route }: ObstructionScreenProps) {
   const [OrbitControls, events] = useControls();
   const [forceRefresh, setForceRefresh] = useState(0);
+  const [showStars, setShowStars] = useState(false);
+  const [backgroundRetry, setBackgroundRetry] = useState(0);
 
   const handleGoBack = () => {
     navigation.goBack();
+  };
+
+  const toggleStars = () => {
+    if (showStars) {
+      setBackgroundRetry(0); // Reset retry when turning off
+    }
+    setShowStars(!showStars);
   };
 
   const minPolarAngleInDegrees = 0;
@@ -341,7 +399,17 @@ export default function ObstructionScreen({ navigation, route }: ObstructionScre
           <Ionicons name="chevron-back" size={24} color="white" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Obstructions</Text>
-        <View style={styles.headerSpacer} />
+        {/* Star Toggle Button */}
+        <TouchableOpacity 
+          style={[styles.starButton, showStars && styles.starButtonActive]} 
+          onPress={toggleStars}
+        >
+          <Ionicons 
+            name="star" 
+            size={20} 
+            color={showStars ? "white" : "#666666"} 
+          />
+        </TouchableOpacity>
       </View>
 
       {/* 3D Model Viewer */}
@@ -357,14 +425,19 @@ export default function ObstructionScreen({ navigation, route }: ObstructionScre
         >
           <OrbitControls 
             enablePan={false}
-            enableZoom={false}
+            enableZoom={true}
             enableRotate={true}
             minPolarAngle={minPolarAngle}
             maxPolarAngle={maxPolarAngle}
             rotateSpeed={2}
             target={new Vector3(0, 0, 0)}
           />
-          <DishyModel forceRefresh={forceRefresh} />
+        <DishyModel 
+        forceRefresh={forceRefresh} 
+        showStars={showStars} 
+        backgroundRetry={backgroundRetry}
+        setBackgroundRetry={setBackgroundRetry}
+        />
         </Canvas>
       </View>
 
@@ -464,5 +537,20 @@ const styles = StyleSheet.create({
     color: '#fefefeff',
     fontSize: 12,
     fontWeight: '500',
+  },
+  starButton: {
+    padding: 8,
+    borderRadius: 6,
+    // backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    // borderWidth: 1,
+    // borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  starButtonActive: {
+    // backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    // borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: 'white',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
 });
