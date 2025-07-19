@@ -29,7 +29,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <View style={styles.titleContainer}>
             <Text style={styles.title}>STARLINK</Text>
           </View>
-          <InfoCard videoSource={require('../../assets/video.mp4')}
+          <InfoCard videoSource={require('../../assets/inception.mp4')}
                   thumbnailSource={require('../../assets/pfp.jpg')}
           />
         </View>
