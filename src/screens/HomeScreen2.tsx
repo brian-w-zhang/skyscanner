@@ -29,7 +29,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <View style={styles.titleContainer}>
             <Text style={styles.title}>STARLINK</Text>
           </View>
-          <InfoCard />
+          <InfoCard videoSource={require('../../assets/video.mp4')}
+                  thumbnailSource={require('../../assets/pfp.jpg')}
+          />
         </View>
         <View style={styles.buttonContainer}>
           <BlurryButton
@@ -40,9 +42,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           />
           <BlurryButton
             title="View Model"
-            onPress={() => navigation.navigate('ObstructionScreen')} // Navigate to the model screen
+            onPress={() => navigation.navigate('ObstructionScreen')}
             style={styles.button}
-            icon="cube-outline" // Example icon for the model
+            icon="cube-outline"
           />
         </View>
       </View>
@@ -50,6 +52,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   );
 }
 
+// ... existing styles remain the same
 const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
@@ -58,7 +61,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Dark overlay for better text readability
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 40,
@@ -74,12 +77,12 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'flex-start', // Changed from 'center' to 'flex-start'
-    paddingTop: 40, // Added padding to move content up
+    justifyContent: 'flex-start',
+    paddingTop: 40,
   },
   titleContainer: {
-    paddingTop: 0, // Removed padding to move title up
-    marginBottom: 20, // Space between title and card
+    paddingTop: 0,
+    marginBottom: 20,
   },
   title: {
     fontSize: 36,
@@ -89,11 +92,11 @@ const styles = StyleSheet.create({
     letterSpacing: 8,
   },
   buttonContainer: {
-    paddingBottom: 15, // Raises button higher from bottom
-    gap: 5, // Space between buttons
+    paddingBottom: 15,
+    gap: 5,
   },
   button: {
     marginHorizontal: 0,
-    marginBottom: 10, // Space between buttons
+    marginBottom: 10,
   },
 });

@@ -15,6 +15,7 @@
     "@react-three/fiber": "^9.2.0",
     "@viro-community/react-viro": "^2.41.1",
     "expo": "~53.0.17",
+    "expo-asset": "~11.1.7",
     "expo-audio": "^0.4.8",
     "expo-av": "~15.1.7",
     "expo-blur": "~14.1.5",
@@ -23,6 +24,7 @@
     "expo-gl": "^15.1.7",
     "expo-linear-gradient": "~14.1.5",
     "expo-media-library": "~17.1.7",
+    "expo-screen-orientation": "^8.1.7",
     "expo-sensors": "~14.1.4",
     "expo-status-bar": "~2.2.3",
     "expo-video": "^2.2.2",
@@ -39,8 +41,7 @@
     "react-native-svg": "15.11.2",
     "react-native-vector-icons": "^10.2.0",
     "three": "^0.178.0",
-    "three-stdlib": "^2.36.0",
-    "expo-asset": "~11.1.7"
+    "three-stdlib": "^2.36.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
