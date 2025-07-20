@@ -71,6 +71,16 @@ In a production environment, this approach would need to be rethought—potentia
 
 ---
 
+### 🌟 Magnet-like Collection for Stars
+One feature I wanted to implement was a “magnet-like” effect for the stars in the 3D camera overlay display. This would mimic how coins are collected by a magnet in games like *Subway Surfers*.  
+
+- The idea was to have stars dynamically move toward the center of the screen when scanned, accompanied by haptic feedback for a satisfying user experience. This effect is present in the existing Starlink app and adds a polished, interactive feel.  
+- However, I struggled with the implementation. Adding more complex animations to the stars often caused delays or drops in the smoothness of the `CameraController`’s orientation updates. This created a noticeable lag in the user experience, which was too big of a sacrifice for the feature.  
+
+Despite experimenting with optimizations, the trade-off between animation complexity and real-time performance was not acceptable. This remains a feature I would like to revisit in the future with better performance tuning.  
+
+---
+
 ## 🧩 Key Components
 - **`CameraScreen2`**: Handles the sky scanning process, including capturing photos and tracking device orientation.  
 - **`ObstructionScreen`**: Displays the 3D dome model with obstruction data.  
