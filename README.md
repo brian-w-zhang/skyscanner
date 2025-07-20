@@ -1,9 +1,6 @@
 # 🌌 Skyscanner
 
-
-
-https://github.com/user-attachments/assets/d852bfae-41e2-403a-a306-4346ad02b1f7
-
+https://github.com/user-attachments/assets/10f1ddb8-60c4-43b3-a0d7-50d60e36288d
 
 
 This project is a reverse-engineered implementation of the obstruction detection tool in the Starlink app. It allows users to scan their environment using their phone's camera and sensors to identify obstructions in the sky that could interfere with satellite signals. The app processes the data and visualizes the results in an interactive 3D dome model.  
