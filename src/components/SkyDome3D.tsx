@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useEffect } from 'react';
+import React, { useRef, useMemo, useEffect, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Canvas, useFrame, useThree } from '@react-three/fiber/native';
 import * as THREE from 'three';
@@ -111,17 +111,16 @@ const createGridLines = () => {
 function CameraController({ orientation, initialOrientation }: { orientation: Orientation; initialOrientation: Orientation }) {
   const { camera } = useThree();
 
-  useFrame(() => {
-    // Since we reset the orientation tracker when scan starts,
-    // we can use the orientation values directly
+  // Use useCallback to memoize the frame update function
+  const updateCamera = useCallback(() => {
     camera.rotation.x = orientation.pitch;
     camera.rotation.y = orientation.yaw;
     camera.rotation.z = orientation.roll;
-
-    // Keep camera at origin
     camera.position.set(0, 0, 0);
     camera.updateMatrixWorld();
-  });
+  }, [camera, orientation.pitch, orientation.yaw, orientation.roll]);
+
+  useFrame(updateCamera);
 
   return null;
 }
@@ -135,6 +134,13 @@ export default function SkyDome3D({ orientation, initialOrientation, onLoaded }:
           fov: 75,
           near: 0.1,
           far: 200,
+        }}
+        gl={{
+          powerPreference: "high-performance", // Use high-performance GPU
+          antialias: false, // Disable for better performance
+        }}
+        performance={{
+          min: 0.8, // Maintain at least 80% of target framerate
         }}
       >
         <CameraController orientation={orientation} initialOrientation={initialOrientation} />

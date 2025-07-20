@@ -109,7 +109,7 @@ function DishyModel({ forceRefresh, showStars, backgroundRetry, setBackgroundRet
   // Force re-evaluation by creating a new array reference when forceRefresh changes
   const obstAssetArray = useMemo(() => {
     console.log('🔄 Creating new asset array, refresh count:', forceRefresh);
-    return [require('../new_testing/model/dome_sky_model.glb')];
+    return [require('../flask/model/dome_sky_model.glb')];
   }, [forceRefresh]);
   
   const [obstAssets] = useAssets(obstAssetArray);

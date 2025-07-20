@@ -32,7 +32,7 @@
           "assets": [
             "./assets/3d/dishy.glb",
             "./assets/3d/G4_Standard_Open.glb",
-            "./src/new_testing/model/dome_sky_model.glb",
+            "./src/flask/model/dome_sky_model.glb",
             "./assets/3d/dots.glb"
           ]
         }

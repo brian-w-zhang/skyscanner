@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -13,45 +13,57 @@ export default function ProgressRing({
   size = 80, 
   strokeWidth = 8 
 }: ProgressRingProps) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const strokeDasharray = circumference;
-  const strokeDashoffset = circumference - (progress / 100) * circumference;
+  // Memoize all calculations to prevent recalculation on every render
+  const ringData = useMemo(() => {
+    const radius = (size - strokeWidth) / 2;
+    const circumference = radius * 2 * Math.PI;
+    
+    // Round progress to nearest 5% to reduce unnecessary updates
+    const roundedProgress = Math.round(progress / 5) * 5;
+    const strokeDashoffset = circumference - (roundedProgress / 100) * circumference;
+    
+    return {
+      radius,
+      circumference,
+      strokeDashoffset,
+      displayProgress: Math.round(roundedProgress)
+    };
+  }, [progress, size, strokeWidth]);
 
   return (
     <View style={[styles.container, { width: size, height: size }]}>
       <Svg width={size} height={size} style={styles.svg}>
-        {/* Background circle (black) */}
+        {/* Background circle */}
         <Circle
           cx={size / 2}
           cy={size / 2}
-          r={radius}
+          r={ringData.radius}
           stroke="#000000"
           strokeWidth={strokeWidth}
           fill="none"
           strokeOpacity={0.8}
         />
         
-        {/* Progress circle (white) */}
+        {/* Progress circle */}
         <Circle
           cx={size / 2}
           cy={size / 2}
-          r={radius}
+          r={ringData.radius}
           stroke="#ffffff"
           strokeWidth={strokeWidth}
           fill="none"
-          strokeDasharray={strokeDasharray}
-          strokeDashoffset={strokeDashoffset}
+          strokeDasharray={ringData.circumference}
+          strokeDashoffset={ringData.strokeDashoffset}
           strokeLinecap="butt"
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
           strokeOpacity={0.9}
         />
       </Svg>
       
-      {/* Percentage text in center */}
+      {/* Percentage text */}
       <View style={styles.textContainer}>
         <Text style={styles.percentageText}>
-          {Math.round(progress)}%
+          {ringData.displayProgress}%
         </Text>
       </View>
     </View>

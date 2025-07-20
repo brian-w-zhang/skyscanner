@@ -13,9 +13,9 @@ export interface ScanCoverage {
 
 export class ScanTracker {
   private scannedPoints: ScanPoint[] = [];
-  private gridResolution: number = 13; // Higher = more accurate but slower
+  private gridResolution: number = 10; // Higher = more accurate but slower
   private fovRadians: number = (75 * Math.PI) / 180; // 75 degrees camera FOV
-  private minDwellTime: number = 80; // Minimum time between captures (ms)
+  private minDwellTime: number = 200; // Minimum time between captures (ms)
   private lastCaptureTime: number = 0;
   
   // White dome bounds (matching your SkyDome component)

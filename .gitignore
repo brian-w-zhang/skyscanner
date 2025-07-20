@@ -42,4 +42,4 @@ venv
 .env
 
 # testing 
-src/new_testing/temp*
+src/flask/temp*
