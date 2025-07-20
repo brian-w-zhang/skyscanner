@@ -1,6 +1,6 @@
-# 🌌 Starlink Obstruction Scanner
+# 🌌 Skyscanner
 
-This project is a reverse-engineered implementation of SpaceX's Starlink obstruction detection tool. It allows users to scan their environment using their phone's camera and sensors to identify obstructions in the sky that could interfere with satellite signals. The app processes the data and visualizes the results in an interactive 3D dome model.  
+This project is a reverse-engineered implementation of the obstruction detection tool in the Starlink app. It allows users to scan their environment using their phone's camera and sensors to identify obstructions in the sky that could interfere with satellite signals. The app processes the data and visualizes the results in an interactive 3D dome model.  
 
 > **Note:** The `screen2` files in the project were created after migrating to a new method of capturing individual camera frames instead of recording a video. The older video-based implementation is still present in the project but is no longer actively used.  
 
@@ -27,14 +27,14 @@ This project is a reverse-engineered implementation of SpaceX's Starlink obstruc
 - Real-time progress tracking with a circular progress ring.  
 - 3D visualization of obstructions using Three.js.  
 - Flask backend for processing photos and generating 3D models.  
-- Interactive UI with features like video playback, compass integration, and more.  
+- Interactive 3D UI with additions like orbit controls, custom themes, camera orientation mirroring, and more.  
 
 ---
 
 ## 🛠 Challenges and Workarounds
 
 ### 📡 Sensor Data Accuracy
-One of the main challenges was the inaccuracy of sensor data, particularly yaw (compass heading) when users point their phone camera toward the sky. This was critical for orientation tracking and ensuring the 3D dome mirrored the physical device's rotation.  
+One of the main challenges was the inaccuracy of data from expo-sensor, given that it's not a native module. In particular yaw (compass heading) was innacurate / didn't flip when users point their phone camera toward the sky. This was critical for orientation tracking and ensuring the 3D dome mirrored the physical device's rotation.  
 
 - The gyroscope proved to be more reliable than the magnetometer for smoother performance, so it became the primary sensor for orientation tracking.  
 - However, gyroscope drift remained an issue. A workaround was implemented by guiding users to point their phone at the sky using the accelerometer first.  
