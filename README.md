@@ -2,6 +2,10 @@
 
 
 
+https://github.com/user-attachments/assets/d852bfae-41e2-403a-a306-4346ad02b1f7
+
+
+
 This project is a reverse-engineered implementation of the obstruction detection tool in the Starlink app. It allows users to scan their environment using their phone's camera and sensors to identify obstructions in the sky that could interfere with satellite signals. The app processes the data and visualizes the results in an interactive 3D dome model.  
 
 > **Note:** The `screen2` files in the project were created after migrating to a new method of capturing individual camera frames instead of recording a video. The older video-based implementation is still present in the project but is no longer actively used.  
